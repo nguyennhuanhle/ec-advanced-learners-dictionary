@@ -8,9 +8,9 @@
   import About from "$lib/About.svelte";
   import * as api from "$lib/api";
   import { cleanQuery, describeVia } from "$lib/api";
-  import { pickSavePath } from "$lib/platform";
+  import { IS_WEB, downloadText, persistStorage, pickSavePath } from "$lib/platform";
   import { writeClipboard } from "$lib/copy";
-  import { speak, type Accent } from "$lib/speech";
+  import { setOnlineVoices, speak, type Accent } from "$lib/speech";
   import { APP_NAME, dateLocale, t, tErr, ui, type UiLang } from "$lib/i18n.svelte";
   import type { DbStatus, EnEntry, HistoryRow, ListInfo, ListItem, LookupView, Mode, Source, Suggestion, Via, ViEntry } from "$lib/types";
 
@@ -58,6 +58,9 @@
   let editing = $state<"" | "new" | "rename">("");
   let editName = $state("");
   let banner = $state("");
+  let onlineVoices = $state(false); // bản web: cho dùng giọng đọc trực tuyến của trình duyệt (UC-W11)
+  let copyManual = $state(""); // bản web: trình duyệt chặn clipboard → hiện chữ để người dùng tự chép
+  let restoreInput: HTMLInputElement | undefined = $state();
   let bannerReload = $state(false); // bản web: dải thông báo có nút "Tải lại" (UC-W10)
   let toast = $state("");
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -91,8 +94,11 @@
       accent = (st.accent as Accent) ?? "us";
       if (st.closed !== undefined) closed = new Set(st.closed.split(",").filter(Boolean));
       activeList = Number(st.active_list ?? 0);
+      onlineVoices = st.online_voices === "1";
+      setOnlineVoices(onlineVoices);
       await refreshLists();
       await refreshHistory();
+      if (IS_WEB) webStartup(st);
     } else if (status.user_error) {
       banner = t("userDbError", { e: tErr(status.user_error) });
     }
@@ -111,6 +117,19 @@
     window.speechSynthesis?.getVoices(); // nạp sẵn danh sách giọng
     inputEl?.focus();
   });
+
+  /** Bản web: xin giữ dữ liệu lâu dài, nhắc sao lưu, đồng bộ khi quay lại tab (UC-W05, W07, "hai tab"). */
+  function webStartup(st: Record<string, string>) {
+    persistStorage();
+    const n = listInfos.reduce((a, l) => a + l.count, 0);
+    const last = Number(st.last_backup ?? 0);
+    if (n >= 10 && Date.now() / 1000 - last > 30 * 86400) banner = t("backupReminder", { n });
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState !== "visible" || !status?.user_ok) return;
+      await refreshLists();
+      await refreshHistory();
+    });
+  }
 
   function applyLook() {
     const root = document.documentElement;
@@ -241,6 +260,7 @@
     const l = listInfos.find((x) => x.id === activeList);
     if (!l) return;
     if (!l.count) return say(t("listEmptyExport"));
+    if (IS_WEB) return exportListWeb(l.id, l.name);
     const suggested = await api.defaultExportPath(l.name);
     const path = await pickSavePath(suggested);
     if (!path) return;
@@ -250,6 +270,74 @@
     } catch (e) {
       say(tErr(e), 8000);
     }
+  }
+
+  /** UC-W06: CSV dựng trong Worker, trình duyệt tải về thư mục Tải về (UTF-8 có BOM để Excel đọc đúng tiếng Việt). */
+  async function exportListWeb(id: number, name: string) {
+    try {
+      const r = await api.exportCsvText(id);
+      const file = await api.defaultExportPath(name);
+      const body = "\ufeff" + r.text + "\r\n";
+      if (downloadText(file, body, "text/csv;charset=utf-8")) return say(t("exportedWeb", { n: r.rows, name: file }), 7000);
+      // trình duyệt trong app (Zalo, Facebook…) không tải được file → chép nội dung CSV vào clipboard
+      try {
+        await navigator.clipboard.writeText(r.text);
+        say(t("noDownload"), 9000);
+      } catch {
+        copyManual = r.text;
+      }
+    } catch (e) {
+      say(tErr(e), 8000);
+    }
+  }
+
+  // ---------- sao lưu / khôi phục / xoá (bản web, UC-W07, W08) ----------
+  async function backupData() {
+    try {
+      const b = await api.userBackup();
+      const d = new Date(b.exported_at * 1000);
+      const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+      const file = `ecdict-backup-${ymd}.json`;
+      if (!downloadText(file, JSON.stringify(b, null, 1), "application/json")) return say(t("noDownloadBackup"), 8000);
+      if (banner === t("backupReminder", { n: listInfos.reduce((a, l) => a + l.count, 0) })) banner = "";
+      say(t("backedUp", { name: file }), 7000);
+    } catch (e) {
+      say(tErr(e), 8000);
+    }
+  }
+  async function restoreData(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const f = input.files?.[0];
+    input.value = "";
+    if (!f) return;
+    try {
+      const r = await api.userRestore(await f.text());
+      const st = await api.settings();
+      onlineVoices = st.online_voices === "1";
+      setOnlineVoices(onlineVoices);
+      await refreshLists();
+      await refreshHistory();
+      say(t("restored", { lists: r.lists, items: r.items, history: r.history }), 8000);
+    } catch (e) {
+      say(t("restoreFailed", { e: tErr(e) }), 9000);
+    }
+  }
+  async function clearAllData() {
+    if (!confirm(t("confirmClearAll"))) return;
+    try {
+      await api.userClear();
+      activeList = 0;
+      await refreshLists();
+      await refreshHistory();
+      say(t("clearedAll"));
+    } catch (e) {
+      say(tErr(e), 8000);
+    }
+  }
+  function setOnline(on: boolean) {
+    onlineVoices = on;
+    setOnlineVoices(on);
+    saveSetting("online_voices", on ? "1" : "0");
   }
 
   // ---------- lịch sử (U29) ----------
@@ -411,7 +499,8 @@
       await writeClipboard(clip.html, clip.text);
       say(t("copied", { what }));
     } catch (e) {
-      say(t("copyFailed", { e: String(e) }));
+      if (IS_WEB) copyManual = clip.text; // UC-W: trình duyệt từ chối clipboard → hiện chữ để tự chép
+      else say(t("copyFailed", { e: String(e) }));
     }
   }
 
@@ -701,6 +790,14 @@
               <button class="test" onclick={() => onSpeak("The weather is lovely today.", accent)}>{t("tryVoice")}</button>
             </div>
           </div>
+          {#if IS_WEB}
+            <div class="row top">
+              <div class="lab">{t("setOnlineVoices")}</div>
+              <div class="ctl paths">
+                <label><input type="checkbox" checked={onlineVoices} onchange={(e) => setOnline((e.target as HTMLInputElement).checked)} /> {t("onlineVoicesNote")}</label>
+              </div>
+            </div>
+          {/if}
           <div class="row top">
             <div class="lab">{t("setOpenSections")}</div>
             <div class="ctl checks">
@@ -713,8 +810,19 @@
             <div class="lab">{t("setData")}</div>
             <div class="ctl paths">
               <div>{t("dataDict")} <code>{status.path}</code> ({t("dataVersion", { v: status.meta.data_version })})</div>
-              <div>{t("dataUser")} <code>{status.user_path ?? "—"}</code></div>
-              <div class="muted">{t("dataNote")}</div>
+              {#if IS_WEB}
+                <div>{t("dataUser")} {status.user_path === "indexeddb" ? t("webStore_indexeddb") : t("webStore_memory")}</div>
+                <div class="muted">{t("dataNoteWeb")}</div>
+                <div class="data-btns">
+                  <button onclick={backupData}>{t("backupBtn")}</button>
+                  <button onclick={() => restoreInput?.click()}>{t("restoreBtn")}</button>
+                  <input bind:this={restoreInput} type="file" accept=".json,application/json" hidden onchange={restoreData} />
+                  <button class="danger" onclick={clearAllData}>{t("clearAllBtn")}</button>
+                </div>
+              {:else}
+                <div>{t("dataUser")} <code>{status.user_path ?? "—"}</code></div>
+                <div class="muted">{t("dataNote")}</div>
+              {/if}
             </div>
           </div>
           <div class="row">
@@ -731,9 +839,75 @@
   {#if toast}
     <div class="toast" role="status">{toast}</div>
   {/if}
+  {#if copyManual}
+    <div class="modal-bg" role="presentation" onclick={(e) => e.target === e.currentTarget && (copyManual = "")}>
+      <div class="modal" role="dialog" aria-modal="true" aria-label={t("copyManualTitle")}>
+        <h2>{t("copyManualTitle")}</h2>
+        <p class="muted">{t("copyManualHint")}</p>
+        <textarea readonly rows="10" onfocus={(e) => (e.target as HTMLTextAreaElement).select()}>{copyManual}</textarea>
+        <div class="modal-foot"><button onclick={() => (copyManual = "")}>{t("closeBtn")}</button></div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
+  .data-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .data-btns button {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font: inherit;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .data-btns button.danger {
+    color: #b3261e;
+    border-color: currentColor;
+  }
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: grid;
+    place-items: center;
+    z-index: 50;
+    padding: 16px;
+  }
+  .modal {
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 16px 18px;
+    width: min(640px, 100%);
+    box-shadow: var(--shadow);
+  }
+  .modal h2 {
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+  }
+  .modal textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font: 0.85rem var(--mono);
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px;
+  }
+  .modal-foot {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
   .app {
     display: grid;
     grid-template-columns: 220px 1fr;

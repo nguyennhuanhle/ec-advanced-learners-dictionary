@@ -64,6 +64,12 @@ export const settingSet = (key: string, value: string) => call<null>("setting_se
 export const defaultExportPath = (name: string) => call<string>("default_export_path", { name });
 export const exportCsv = (list_id: number, path: string) => call<number>("export_csv", { list_id, path });
 
+// chỉ bản web (web/worker.ts): CSV dựng trong Worker, sao lưu / khôi phục / xoá dữ liệu cá nhân trong trình duyệt
+export const exportCsvText = (id: number) => call<{ text: string; rows: number }>("export_csv_text", { id });
+export const userBackup = () => call<object & { exported_at: number }>("user_backup");
+export const userRestore = (text: string) => call<{ lists: number; items: number; history: number }>("user_restore", { text });
+export const userClear = () => call<null>("user_clear");
+
 export function cleanQuery(q: string): string {
   return q.replace(/[^\p{L}\p{M}\s'\-?*.]/gu, " ").replace(/\s+/g, " ").trim();
 }

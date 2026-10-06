@@ -1,15 +1,9 @@
-// Dữ liệu cá nhân của bản web — TẠM cho vòng W2: giữ trong bộ nhớ của Worker, mất khi tải lại trang.
-// Cùng lệnh, cùng thứ tự, cùng chuỗi lỗi như app/src-tauri/src/user_db.rs để giao diện chạy y như desktop.
-// TODO(W3): thay bằng store.ts (IndexedDB "ecdict-user", nâng cấp phiên bản, nhiều tab, dự phòng bộ nhớ tạm — UC-W05, WS02).
+// Dữ liệu cá nhân của bản web giữ TRONG BỘ NHỚ của Worker — chỉ dùng khi trình duyệt không cho lưu IndexedDB
+// (chế độ ẩn danh chặn, chính sách trình duyệt…): từ điển vẫn tra được, lịch sử/danh sách mất khi đóng trang (UC-W "Khi lỗi").
+// Cùng lệnh, cùng thứ tự, cùng chuỗi lỗi như app/src-tauri/src/user_db.rs và store.ts.
 
-import type { HistoryRow, ListInfo, ListItem } from "../types";
-import { splitWhitespace } from "./core";
-
-export const DEFAULT_LIST = "Từ của tôi";
-
-const now = () => Math.floor(Date.now() / 1000);
-/** split_whitespace + join(" ") của Rust */
-const squash = (s: string) => splitWhitespace(s).join(" ");
+import type { HistoryRow, ListInfo } from "../types";
+import { DEFAULT_LIST, USER_ERR, cleanName, now, sameName, type StoredItem, type UserApi } from "./user-common";
 
 interface Hist extends HistoryRow {
   id: number;
@@ -19,9 +13,10 @@ interface List {
   name: string;
   created: number;
 }
-type Item = Omit<ListItem, "exists"> & { list_id: number };
+type Item = StoredItem & { list_id: number };
 
-export class UserMem {
+export class UserMem implements UserApi {
+  readonly kind = "memory" as const;
   private seq = 0;
   private hist: Hist[] = [];
   private listsT: List[] = [];
@@ -38,8 +33,11 @@ export class UserMem {
 
   // ---------- lịch sử (U29) ----------
   historyAdd(key: string, label: string, kind: string) {
-    this.hist = this.hist.filter((h) => h.key !== key);
-    this.hist.push({ id: ++this.seq, key, label, kind: kind as HistoryRow["kind"], ts: now() });
+    this.historyPut({ key, label, kind: kind as HistoryRow["kind"], ts: now() });
+  }
+  historyPut(row: HistoryRow) {
+    this.hist = this.hist.filter((h) => h.key !== row.key);
+    this.hist.push({ ...row, id: ++this.seq });
     this.hist = this.sortedHist().slice(0, 500); // giữ 500 mục gần nhất
   }
   private sortedHist() {
@@ -60,29 +58,21 @@ export class UserMem {
       .sort((a, b) => a.created - b.created || a.id - b.id)
       .map((l) => ({ id: l.id, name: l.name, count: this.itemsT.filter((i) => i.list_id === l.id).length }));
   }
-  private cleanName(name: string): string {
-    const n = squash(name);
-    if (!n) throw "Tên danh sách không được để trống";
-    if (Array.from(n).length > 80) throw "Tên danh sách tối đa 80 ký tự";
-    return n;
-  }
-  /** So tên không phân biệt hoa/thường theo Unicode ("Từ của tôi" = "từ của TÔI"). */
   private nameTaken(name: string, except: number) {
-    const n = name.toLowerCase();
-    return this.listsT.some((l) => l.id !== except && l.name.toLowerCase() === n);
+    return this.listsT.some((l) => l.id !== except && sameName(l.name, name));
   }
   listCreate(name: string): number {
-    const n = this.cleanName(name);
-    if (this.nameTaken(n, 0)) throw "Đã có danh sách tên này";
+    const n = cleanName(name);
+    if (this.nameTaken(n, 0)) throw USER_ERR.nameTaken;
     const id = ++this.seq;
     this.listsT.push({ id, name: n, created: now() });
     return id;
   }
   listRename(id: number, name: string) {
-    const n = this.cleanName(name);
-    if (this.nameTaken(n, id)) throw "Đã có danh sách tên này";
+    const n = cleanName(name);
+    if (this.nameTaken(n, id)) throw USER_ERR.nameTaken;
     const l = this.listsT.find((x) => x.id === id);
-    if (!l) throw "Danh sách không còn tồn tại";
+    if (!l) throw USER_ERR.noList;
     l.name = n;
   }
   listDelete(id: number) {
@@ -90,18 +80,18 @@ export class UserMem {
     this.itemsT = this.itemsT.filter((i) => i.list_id !== id);
     this.ensureDefaultList();
   }
-  items(listId: number): Omit<ListItem, "exists">[] {
+  items(listId: number): StoredItem[] {
     return this.itemsT
       .filter((i) => i.list_id === listId)
       .sort((a, b) => b.added_at - a.added_at || b.id - a.id)
       .map(({ id, word, pos, sense, label, added_at }) => ({ id, word, pos, sense, label, added_at }));
   }
-  itemAdd(listId: number, word: string, pos: string, sense: string, label: string): number {
-    if (!this.listsT.some((l) => l.id === listId)) throw "Danh sách không còn tồn tại";
+  itemAdd(listId: number, word: string, pos: string, sense: string, label: string, addedAt?: number): number {
+    if (!this.listsT.some((l) => l.id === listId)) throw USER_ERR.noList;
     if (this.itemsT.some((i) => i.list_id === listId && i.word === word && i.pos === pos && i.sense === sense))
-      throw "Đã có trong danh sách";
+      throw USER_ERR.dupItem;
     const id = ++this.seq;
-    this.itemsT.push({ id, list_id: listId, word, pos, sense, label, added_at: now() });
+    this.itemsT.push({ id, list_id: listId, word, pos, sense, label, added_at: addedAt ?? now() });
     return id;
   }
   itemRemove(id: number) {
@@ -118,12 +108,12 @@ export class UserMem {
   settingSet(key: string, value: string) {
     this.settingsT.set(key, value);
   }
-}
 
-/** = lib.rs::default_export_path (chỉ phần tên file; trình duyệt tự chọn thư mục Tải về). */
-export function defaultExportName(name: string): string {
-  const safe = Array.from(name, (c) => (/[\p{L}\p{N}]/u.test(c) || c === " " || c === "-" || c === "_" ? c : "_"))
-    .join("")
-    .trim();
-  return `EC Dictionary - ${safe || "word list"}.csv`;
+  clearAll() {
+    this.hist = [];
+    this.listsT = [];
+    this.itemsT = [];
+    this.settingsT.clear();
+    this.ensureDefaultList();
+  }
 }

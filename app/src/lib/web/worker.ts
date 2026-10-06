@@ -3,7 +3,11 @@
 // bản dữ liệu (UC-W10). Nhận/gửi tin nhắn theo protocol.ts; mỗi lệnh = một lệnh `call(cmd, args)` của bản desktop.
 import { DictCore, versionLess, type DataSource, type Manifest } from "./core";
 import { WEB_ERR, webSchemaError, type FromWorker, type ToWorker } from "./protocol";
-import { UserMem, defaultExportName } from "./user-mem";
+import type { EnEntry } from "../types";
+import { buildCsv } from "./csv";
+import { UserStore } from "./store";
+import { USER_ERR, defaultExportName, makeBackup, parseBackup, restoreBackup, type UserApi } from "./user-common";
+import { UserMem } from "./user-mem";
 
 const SCHEMA_WEB = 1; // định dạng dữ liệu web mà giao diện này đọc được (export_web.SCHEMA_WEB)
 const TIMEOUT_MS = 20_000;
@@ -23,7 +27,24 @@ let initError: string | null = null;
 let ready: Promise<void> | null = null;
 let stale = false;
 let lastManifestCheck = 0;
-const user = new UserMem();
+/** Dữ liệu cá nhân: IndexedDB; trình duyệt không cho lưu → bộ nhớ tạm + thông báo (UC-W "Khi lỗi", W3). */
+let user: UserApi = new UserMem();
+let userNotice: string | null = null;
+let userReady: Promise<void> | null = null;
+function openUser(): Promise<void> {
+  return UserStore.open(() => {
+    // tab khác cần nâng cấp dữ liệu cá nhân lên phiên bản mới: tab này đóng IndexedDB lại và báo tải lại trang
+    ctx.postMessage({ type: "notice", code: "user-closed", message: USER_ERR.otherTab, version: "" });
+  }).then(
+    (s) => {
+      user = s;
+    },
+    () => {
+      user = new UserMem();
+      userNotice = USER_ERR.noStorage;
+    },
+  );
+}
 const shardCache = new Map<string, Promise<unknown>>();
 
 class WebError extends Error {}
@@ -153,10 +174,17 @@ function dict(): DictCore {
 const str = (a: Record<string, unknown>, k: string) => (typeof a[k] === "string" ? (a[k] as string) : "");
 const int = (a: Record<string, unknown>, k: string) => (typeof a[k] === "number" ? Math.trunc(a[k] as number) : 0);
 
+const DICT_CMDS = new Set(["db_status", "suggest", "lookup", "get_entry", "get_vi_entry", "sources", "list_items", "export_csv_text"]);
+
 async function handle(cmd: string, a: Record<string, unknown>): Promise<unknown> {
-  // mở lại sau lỗi lúc đầu (mất mạng khi vừa mở trang): lần gọi db_status sau sẽ thử đọc manifest lần nữa
-  if (!ready || (cmd === "db_status" && !core && !initRunning)) ready = init();
-  await ready;
+  // dữ liệu cá nhân mở độc lập với từ điển: mất mạng vẫn xem được danh sách, lịch sử
+  if (!userReady) userReady = openUser();
+  await userReady;
+  if (DICT_CMDS.has(cmd)) {
+    // mở lại sau lỗi lúc đầu (mất mạng khi vừa mở trang): lần gọi db_status sau sẽ thử đọc manifest lần nữa
+    if (!ready || (cmd === "db_status" && !core && !initRunning)) ready = init();
+    await ready;
+  }
   switch (cmd) {
     case "db_status":
       return {
@@ -168,9 +196,13 @@ async function handle(cmd: string, a: Record<string, unknown>): Promise<unknown>
         counts: manifest?.db_counts ?? {},
         user_ok: true,
         user_error: null,
-        // TODO(W3): IndexedDB; W2 chỉ giữ trong bộ nhớ của trang
-        user_path: "bộ nhớ tạm của trang (W2 — mất khi tải lại)",
-        user_notice: null,
+        // giao diện đổi khoá này thành chữ theo ngôn ngữ (i18n: webStore_indexeddb / webStore_memory)
+        user_path: user.kind,
+        user_notice: (() => {
+          const n = userNotice;
+          userNotice = null; // chỉ báo một lần, như lib.rs
+          return n;
+        })(),
       };
     case "suggest":
     case "lookup":
@@ -185,24 +217,24 @@ async function handle(cmd: string, a: Record<string, unknown>): Promise<unknown>
     case "history":
       return user.history(typeof a.limit === "number" ? a.limit : 200);
     case "history_add":
-      user.historyAdd(str(a, "key"), str(a, "label"), str(a, "kind"));
+      await user.historyAdd(str(a, "key"), str(a, "label"), str(a, "kind"));
       return null;
     case "history_clear":
-      user.historyClear();
+      await user.historyClear();
       return null;
     case "lists":
       return user.lists();
     case "list_create":
       return user.listCreate(str(a, "name"));
     case "list_rename":
-      user.listRename(int(a, "id"), str(a, "name"));
+      await user.listRename(int(a, "id"), str(a, "name"));
       return null;
     case "list_delete":
-      user.listDelete(int(a, "id"));
+      await user.listDelete(int(a, "id"));
       return null;
     case "list_items": {
       // + cờ "còn có trong dữ liệu hiện tại" như lib.rs::items_checked
-      const items = user.items(int(a, "id"));
+      const items = await user.items(int(a, "id"));
       return Promise.all(items.map(async (i) => ({ ...i, exists: core ? await core.exists(i.word).catch(() => true) : false })));
     }
     case "saved_keys":
@@ -210,17 +242,32 @@ async function handle(cmd: string, a: Record<string, unknown>): Promise<unknown>
     case "item_add":
       return user.itemAdd(int(a, "list_id"), str(a, "word"), str(a, "pos"), str(a, "sense"), str(a, "label"));
     case "item_remove":
-      user.itemRemove(int(a, "id"));
+      await user.itemRemove(int(a, "id"));
       return null;
     case "settings":
       return user.settings();
     case "setting_set":
-      user.settingSet(str(a, "key"), str(a, "value"));
+      await user.settingSet(str(a, "key"), str(a, "value"));
       return null;
     case "default_export_path":
       return defaultExportName(str(a, "name"));
-    case "export_csv":
-      throw new WebError(WEB_ERR.csv); // TODO(W3): csv.ts → Blob + <a download>
+    case "export_csv_text": {
+      // UC-W06: Worker dựng nội dung CSV; giao diện tải file bằng trình duyệt
+      const r = await buildCsv(await user.items(int(a, "id")), (w) => dict().call("get_entry", { word: w }) as Promise<EnEntry | null>);
+      dict().trimCache();
+      return r;
+    }
+    case "user_backup": {
+      // UC-W07: toàn bộ dữ liệu cá nhân → đối tượng JSON; giao diện tải thành file .json
+      const b = await makeBackup(user, appVersion);
+      await user.settingSet("last_backup", String(b.exported_at));
+      return b;
+    }
+    case "user_restore":
+      return restoreBackup(user, parseBackup(str(a, "text")));
+    case "user_clear":
+      await user.clearAll();
+      return null;
     default:
       throw new WebError(`Lệnh không tồn tại: ${cmd}`);
   }

@@ -40,9 +40,16 @@ class Handler(SimpleHTTPRequestHandler):
     def guess_type(self, path):
         return TYPES.get(Path(path).suffix.lower(), "application/octet-stream")
 
+    def send_response(self, code, message=None):
+        self._code = code
+        super().send_response(code, message)
+
     def end_headers(self):
         p = urlsplit(self.path).path
-        if p.endswith("manifest.json") or p in ("/", "/index.html"):
+        if getattr(self, "_code", 200) >= 400:
+            # lỗi (404 khi thư mục dữ liệu vừa đổi…) không được lưu đệm, nhất là không "immutable"
+            self.send_header("Cache-Control", "no-store")
+        elif p.endswith("manifest.json") or p in ("/", "/index.html"):
             self.send_header("Cache-Control", "no-cache")
         elif p.startswith("/data/v") or p.startswith("/_app/immutable/"):
             self.send_header("Cache-Control", "public, max-age=31536000, immutable")

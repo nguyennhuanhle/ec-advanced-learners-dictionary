@@ -10,8 +10,8 @@ export type FromWorker =
   | { type: "result"; id: number; ok: true; value: unknown }
   /** `error` là chuỗi tiếng Việt như lỗi của Rust, để tErr() dịch được */
   | { type: "result"; id: number; ok: false; error: string }
-  /** UC-W10: site đã đổi bản dữ liệu trong lúc trang đang mở */
-  | { type: "notice"; code: "stale"; message: string; version: string };
+  /** UC-W10: site đã đổi bản dữ liệu trong lúc trang đang mở; "user-closed": tab khác nâng cấp dữ liệu cá nhân */
+  | { type: "notice"; code: "stale" | "user-closed"; message: string; version: string };
 
 /** Thông báo lỗi của bản web (tiếng Việt, có bản dịch trong i18n.svelte.ts › RUST_ERRORS). */
 export const WEB_ERR = {
@@ -20,7 +20,6 @@ export const WEB_ERR = {
   stale: "Đã có bản dữ liệu mới — tải lại trang",
   corrupt: "Dữ liệu của mục này bị lỗi, hãy tải lại trang",
   oldBrowser: "Trình duyệt này quá cũ (thiếu Web Worker hoặc fetch) — hãy dùng trình duyệt mới hơn",
-  csv: "Bản web chưa xuất được CSV (sẽ có ở vòng W3)",
 } as const;
 
 /** Khi bản dữ liệu hoặc giao diện không hợp nhau (manifest.schema_web / min_ui). */

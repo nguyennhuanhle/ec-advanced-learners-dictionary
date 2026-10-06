@@ -1,12 +1,44 @@
-// Phát âm bằng giọng máy (prototype dùng Web Speech API của WebView2, đọc giọng Windows).
-// Bản thật gọi Rust crate `tts` (PLAN mục 3); quy tắc giống nhau: thiếu giọng UK thì dùng giọng Mỹ và báo rõ.
+// Phát âm bằng giọng máy (Web Speech API: WebView2 đọc giọng Windows ở bản desktop, trình duyệt/thiết bị ở bản web).
+// Quy tắc chung: thiếu giọng UK thì dùng giọng Mỹ và báo rõ.
+// Bản web (UC-W11): mặc định chỉ dùng giọng CHẠY TRÊN MÁY (localService); giọng trực tuyến của trình duyệt gửi chữ cần đọc
+// tới máy chủ của hãng nên chỉ dùng khi người dùng tự bật trong Cài đặt (setOnlineVoices).
 
 import { t } from "./i18n.svelte";
+import { IS_WEB, devicePlatform } from "./platform";
 
 export type Accent = "uk" | "us" | "vi";
 
-function voices(): SpeechSynthesisVoice[] {
+let allowOnline = false;
+export function setOnlineVoices(on: boolean) {
+  allowOnline = on;
+}
+
+function allVoices(): SpeechSynthesisVoice[] {
   return typeof speechSynthesis === "undefined" ? [] : speechSynthesis.getVoices();
+}
+
+/** Giọng được phép dùng, giọng trên máy xếp trước. */
+function voices(): SpeechSynthesisVoice[] {
+  const all = allVoices();
+  if (!IS_WEB) return all;
+  const local = all.filter((v) => v.localService);
+  return allowOnline ? [...local, ...all.filter((v) => !v.localService)] : local;
+}
+
+/** Hướng dẫn cài giọng đọc theo nền tảng (bản web chạy trên nhiều loại máy). */
+function voiceHelp(): string {
+  switch (devicePlatform()) {
+    case "android":
+      return t("voiceHelpAndroid");
+    case "ios":
+      return t("voiceHelpIos");
+    case "mac":
+      return t("voiceHelpMac");
+    case "windows":
+      return t("voiceHelpWindows");
+    default:
+      return t("voiceHelpOther");
+  }
 }
 
 export function pickVoice(accent: Accent): { voice: SpeechSynthesisVoice | null; note: string | null } {
@@ -18,8 +50,13 @@ export function pickVoice(accent: Accent): { voice: SpeechSynthesisVoice | null;
     const us = vs.find((v) => v.lang.startsWith("en"));
     if (us) return { voice: us, note: t("voiceUkFallback") };
   }
-  if (accent === "vi") return { voice: null, note: t("voiceNoVi") };
-  return { voice: null, note: t("voiceNoEn") };
+  // bản web: có giọng trực tuyến hợp ngôn ngữ nhưng người dùng chưa bật → nói rõ thay vì "máy chưa có giọng"
+  const prefix = accent === "vi" ? "vi" : "en";
+  if (IS_WEB && !allowOnline && allVoices().some((v) => !v.localService && v.lang.replace("_", "-").startsWith(prefix)))
+    return { voice: null, note: t("voiceOnlineOff") };
+  // bản desktop giữ nguyên câu cũ (luôn là Windows); bản web hướng dẫn theo nền tảng của thiết bị
+  if (!IS_WEB) return { voice: null, note: t(accent === "vi" ? "voiceNoVi" : "voiceNoEn") };
+  return { voice: null, note: t(accent === "vi" ? "voiceNoViWeb" : "voiceNoEnWeb", { help: voiceHelp() }) };
 }
 
 export function speak(text: string, accent: Accent): string | null {

@@ -25,6 +25,7 @@ Bố cục (PLAN-web 4.2):
 """
 import argparse
 import gzip
+import hashlib
 import json
 import math
 import os
@@ -625,11 +626,20 @@ def main():
     for need in ("sources.json", "LICENSES.md", "words.txt"):
         if not (vdir / need).is_file() or (vdir / need).stat().st_size == 0:
             stop(f"thiếu {need}")
-    files = [p for p in vdir.rglob("*") if p.is_file()]
+    files = sorted((p for p in vdir.rglob("*") if p.is_file()), key=lambda p: p.relative_to(vdir).as_posix())
     total = sum(p.stat().st_size for p in files)
+    # Tên thư mục = phiên bản dữ liệu + mã băm nội dung: thư mục được lưu đệm "bất biến" 1 năm, nên xuất lại cùng
+    # phiên bản dữ liệu mà nội dung/cách chia file đổi (vd. đổi ngưỡng tách tiền tố) vẫn ra thư mục mới, trình duyệt
+    # không bao giờ ghép file cũ trong bộ đệm với manifest mới. Cùng nội dung → cùng tên (tất định).
+    h = hashlib.sha256()
+    for f in files:
+        h.update(f.relative_to(vdir).as_posix().encode("utf-8") + b"\0" + f.read_bytes() + b"\0")
+    vname = f"v{ver}-{h.hexdigest()[:8]}"
+    vdir = vdir.rename(STAGE / vname)
+    files = [vdir / f.relative_to(STAGE / f"v{ver}") for f in files]
     manifest = {
         "schema_web": SCHEMA_WEB, "data_version": ver, "build_date": meta.get("build_date"), "min_ui": MIN_UI,
-        "base": f"v{ver}/", "en_shards": EN_SHARDS, "vi_shards": VI_SHARDS, "hash": "fnv1a32",
+        "base": f"{vname}/", "en_shards": EN_SHARDS, "vi_shards": VI_SHARDS, "hash": "fnv1a32",
         "prefix": {"len": 2, "max_len": MAX_KEY, "space": SPACE, "other": OTHER, "split": split,
                    "split_bytes": SPLIT_BYTES},
         "relations": {v: k for k, v in REL.items()},
@@ -642,7 +652,7 @@ def main():
     }
     _write(STAGE / "manifest.json", dumps(manifest))
     if len(files) > MAX_FILES:
-        stop(f"số file của bản v{ver} = {len(files)} > ngưỡng {MAX_FILES}.")
+        stop(f"số file của bản {vname} = {len(files)} > ngưỡng {MAX_FILES}.")
     big = [(p.relative_to(STAGE).as_posix(), p.stat().st_size) for p in STAGE.rglob("*")
            if p.is_file() and p.stat().st_size > MAX_FILE_BYTES]
     if big:
@@ -653,7 +663,7 @@ def main():
     STAGE.rename(OUT)
     print(f"\nĐã xuất {OUT} — {n_en} mục Anh, {n_vi} mục Việt, {len(files)} file, {total / 2**20:.1f} MiB chưa nén "
           f"(thời gian dựng {time.time() - t0:.1f} s)\n")
-    print_stats(measure(OUT / f"v{ver}", args.jobs))
+    print_stats(measure(OUT / vname, args.jobs))
     print(f"\nTổng thời gian: {time.time() - t0:.1f} s")
 
 

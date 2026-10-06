@@ -10,7 +10,7 @@ const APP_VERSION: string = import.meta.env.VITE_APP_VERSION || "0.0.0";
 /** Sự kiện trên window khi Worker báo điều cần hiện cho người dùng (UC-W10: đã có bản dữ liệu mới). */
 export const NOTICE_EVENT = "ecald-notice";
 export interface WebNotice {
-  code: "stale";
+  code: "stale" | "user-closed";
   message: string;
 }
 
