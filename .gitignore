@@ -17,3 +17,6 @@ _deliverables/
 node_modules/
 target/
 dist/
+
+# Ghi chú bàn giao nội bộ giữa các phiên Claude (không đưa lên repo công khai)
+STATUS.md

@@ -157,8 +157,8 @@
       appLic: [
         `© ${YEAR} ${AUTHOR_EN}, Edtech Corner. ${APP_NAME} is free of charge.`,
         "You may install and use it free of charge for personal study, for teaching and within your organisation.",
-        "You may give copies of the unmodified installer to others, free of charge.",
-        "You may not sell the app or charge for it, remove its credits or notices, or distribute modified versions without the author's permission.",
+        "You may give copies of the unmodified installer to others, free of charge, and you may read and build the source code for your own use.",
+        "You may not sell the app or charge for it, remove its credits or notices, or distribute modified versions without the author's written permission.",
         "The app is provided “as is”, without warranty of any kind. The author is not liable for any loss arising from its use or from errors in the content.",
         "The name and the logo belong to Edtech Corner.",
       ],
@@ -317,8 +317,8 @@
       appLic: [
         `© ${YEAR} ${AUTHOR_VI}, Edtech Corner. ${APP_NAME} được cung cấp miễn phí.`,
         "Bạn được cài đặt và sử dụng miễn phí để tự học, giảng dạy và dùng trong tổ chức của mình.",
-        "Bạn được chia sẻ miễn phí bản cài đặt nguyên vẹn cho người khác.",
-        "Bạn không được bán hay thu phí cho ứng dụng, gỡ bỏ phần ghi công hoặc thông báo bản quyền, hay phát hành bản đã sửa đổi khi chưa có sự đồng ý của tác giả.",
+        "Bạn được chia sẻ miễn phí bản cài đặt nguyên vẹn cho người khác, và được đọc, build mã nguồn để dùng riêng.",
+        "Bạn không được bán hay thu phí cho ứng dụng, gỡ bỏ phần ghi công hoặc thông báo bản quyền, hay phát hành bản đã sửa đổi khi chưa có sự đồng ý bằng văn bản của tác giả.",
         "Ứng dụng được cung cấp “nguyên trạng”, không kèm bất kỳ bảo đảm nào. Tác giả không chịu trách nhiệm về thiệt hại phát sinh từ việc sử dụng hay từ sai sót trong nội dung.",
         "Tên và logo thuộc về Edtech Corner.",
       ],
