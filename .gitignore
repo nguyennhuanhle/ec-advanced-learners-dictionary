@@ -18,5 +18,8 @@ node_modules/
 target/
 dist/
 
-# Ghi chú bàn giao nội bộ giữa các phiên Claude (không đưa lên repo công khai)
+# Ghi chú làm việc nội bộ (bàn giao, use case, kế hoạch) — không đưa lên repo công khai
 STATUS.md
+use-cases.md
+PLAN.md
+PLAN-web.md

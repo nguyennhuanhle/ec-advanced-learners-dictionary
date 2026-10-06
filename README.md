@@ -49,4 +49,4 @@ npm --prefix app run tauri build  # NSIS installer in app/src-tauri/target/relea
 ```
 
 The AI learner layer (`pipeline/enrich.py run`) needs the Antigravity CLI (`agy`) with access to Gemini. If you skip it, the
-dictionary shows the Wiktionary text only, and the quality gate in `pack.py` (examples, Vietnamese meanings) will not pass. Project notes (in Vietnamese): `use-cases.md`, `PLAN.md`, `PLAN-web.md`.
+dictionary shows the Wiktionary text only, and the quality gate in `pack.py` (examples, Vietnamese meanings) will not pass.
