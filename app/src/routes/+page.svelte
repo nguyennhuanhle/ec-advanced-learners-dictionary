@@ -1667,8 +1667,23 @@
     }
   }
 
-  /* điện thoại (UC-W02): thanh trên cùng hai–ba hàng, ô tìm cả chiều ngang, nút đủ lớn để chạm */
-  @media (max-width: 640px) {
+  /* thanh trên cùng chật dần: bỏ chữ cạnh nút giao diện, rồi bỏ tên app cạnh logo */
+  @media (max-width: 1440px) {
+    .theme-label {
+      display: none;
+    }
+  }
+  @media (max-width: 1024px) {
+    .brand .name {
+      display: none;
+    }
+    .brand {
+      min-width: 0;
+    }
+  }
+
+  /* điện thoại, máy tính bảng dọc (UC-W02): thanh trên cùng nhiều hàng, ô tìm cả chiều ngang, nút đủ lớn để chạm */
+  @media (max-width: 900px) {
     .topbar {
       flex-wrap: wrap;
       gap: 8px;
