@@ -1,10 +1,10 @@
 <script lang="ts">
   // Trang Giới thiệu / Giấy phép (UC-U37): ghi công, cơ sở của từng loại thông tin, nguồn dữ liệu, giấy phép.
   // Văn bản dài nên để ở đây (song ngữ) thay vì i18n.svelte.ts. Đường dẫn chỉ hiện dạng chữ (app không mở mạng).
-  import { APP_NAME, ui } from "./i18n.svelte";
+  import { APP_NAME, t, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { openExternalUrl } from "./platform";
+  import { DESKTOP_DOWNLOAD, IS_WEB, openExternalUrl } from "./platform";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
 
@@ -175,6 +175,21 @@
         "Microsoft Edge WebView2 Runtime (Microsoft licence terms)",
       ],
       privacy: "Privacy: the app works fully offline and never sends your searches, word lists or settings anywhere.",
+      // bản web (UC-W09)
+      introWeb:
+        "A learner's dictionary for Vietnamese learners and teachers of English. The page layout follows modern advanced learner's dictionaries, but all of the content comes from open data or was newly written for this dictionary and labelled AI.",
+      ipaWeb: [
+        "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has none, the transcription from ECDICT is shown.",
+        "Audio uses the text-to-speech voices on your device; there are no recordings yet. Online voices are used only if you turn them on in Settings.",
+      ],
+      webPrivacyTitle: "Privacy (web version)",
+      webPrivacy: [
+        "This page only downloads the dictionary's own files from dictionary.edtechcorner.com: the page itself and small data files for the words you look up.",
+        "Nothing about you is sent anywhere: no account, no analytics, no advertising, no third-party scripts. The word you look up stays after the “#” in the address, so it is not sent to the server; the server only sees which data file was downloaded, and each file covers dozens of words.",
+        "Your history, word lists and settings are stored only in this browser on this device. Use Settings › Download backup to keep a copy or to move them to another device.",
+        "Read-aloud uses the voices on your device. Online voices, which send the text to the browser maker's server, stay off unless you turn them on in Settings.",
+      ],
+      desktopLead: "Want to use the dictionary without internet?",
     },
     vi: {
       tagline: "Anh–Anh · Anh–Việt · Việt–Anh",
@@ -335,6 +350,20 @@
         "Microsoft Edge WebView2 Runtime (điều khoản của Microsoft)",
       ],
       privacy: "Quyền riêng tư: ứng dụng chạy hoàn toàn offline, không gửi từ đã tra, danh sách từ hay cài đặt của bạn đi đâu cả.",
+      introWeb:
+        "Từ điển cho người Việt học và dạy tiếng Anh. Bố cục mục từ theo kiểu từ điển người học nâng cao hiện đại. Toàn bộ nội dung lấy từ dữ liệu mở, hoặc được viết mới cho từ điển này và gắn nhãn AI.",
+      ipaWeb: [
+        "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có thì dùng phiên âm của ECDICT.",
+        "Âm thanh dùng giọng đọc máy có sẵn trên thiết bị của bạn; chưa có bản ghi âm người thật. Giọng đọc trực tuyến chỉ được dùng khi bạn bật trong Cài đặt.",
+      ],
+      webPrivacyTitle: "Quyền riêng tư (bản web)",
+      webPrivacy: [
+        "Trang chỉ tải các file của chính từ điển từ dictionary.edtechcorner.com: bản thân trang và các file dữ liệu nhỏ chứa từ bạn tra.",
+        "Không gửi gì về bạn đi đâu cả: không tài khoản, không thống kê truy cập, không quảng cáo, không script của bên thứ ba. Từ bạn tra nằm sau dấu “#” trên địa chỉ nên không được gửi lên máy chủ; máy chủ chỉ thấy file dữ liệu nào được tải, mỗi file chứa vài chục từ.",
+        "Lịch sử, danh sách từ và cài đặt chỉ lưu trong trình duyệt này trên thiết bị này. Dùng Cài đặt › Tải file sao lưu để giữ một bản hoặc chuyển sang thiết bị khác.",
+        "Đọc to dùng giọng đọc trên thiết bị. Giọng đọc trực tuyến (gửi chữ cần đọc tới máy chủ của hãng trình duyệt) luôn tắt trừ khi bạn bật trong Cài đặt.",
+      ],
+      desktopLead: "Muốn dùng từ điển khi không có mạng?",
     },
   };
 
@@ -376,7 +405,7 @@
       </div>
     </div>
   </header>
-  <p class="intro">{c.intro}</p>
+  <p class="intro">{IS_WEB ? c.introWeb : c.intro}</p>
 
   <nav class="toc">
     {#each c.nav as label, i}<button onclick={() => jump(i)}>{label}</button>{/each}
@@ -409,7 +438,7 @@
     {#each c.cards as card (card.id)}
       <article class="card how" class:wide={card.id === "ai"}>
         <h3>{card.title}{#if card.id === "ai"} <Badge kind="ai" text="AI" />{/if}</h3>
-        {#each card.body as p}<p>{p}</p>{/each}
+        {#each IS_WEB && card.id === "ipa" ? c.ipaWeb : card.body as p}<p>{p}</p>{/each}
         <div class="from"><span>{c.from}:</span> {card.from}</div>
       </article>
     {/each}
@@ -447,7 +476,15 @@
     <h3>{c.swTitle}</h3>
     <ul>{#each c.sw as x}<li>{x}</li>{/each}</ul>
   </div>
-  <p class="muted foot">{c.privacy}</p>
+  {#if IS_WEB}
+    <div class="card lic">
+      <h3>{c.webPrivacyTitle}</h3>
+      <ul>{#each c.webPrivacy as x}<li>{x}</li>{/each}</ul>
+      <p class="dl">{c.desktopLead} <a href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener">{t("downloadDesktop")}</a></p>
+    </div>
+  {:else}
+    <p class="muted foot">{c.privacy}</p>
+  {/if}
 </section>
 
 <style>
@@ -669,6 +706,13 @@
   }
   .foot {
     margin: 6px 0 24px;
+  }
+  .dl {
+    margin: 10px 0 0;
+  }
+  .dl a {
+    color: var(--accent);
+    font-weight: 600;
   }
   @media (max-width: 760px) {
     .credit-grid,

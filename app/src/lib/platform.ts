@@ -79,3 +79,8 @@ export function devicePlatform(): "windows" | "mac" | "android" | "ios" | "other
   if (/Windows/.test(ua)) return "windows";
   return "other";
 }
+
+/** Bộ cài bản desktop (dùng offline) — bản Release mới nhất trên GitHub (UC-M08). */
+export const DESKTOP_DOWNLOAD = "https://github.com/nguyennhuanhle/ec-advanced-learners-dictionary/releases/latest";
+/** Trang chủ Edtech Corner (bản web có liên kết về, UC-W04). */
+export const SITE_HOME = "https://edtechcorner.com";

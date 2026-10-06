@@ -15,7 +15,7 @@ export type FromWorker =
 
 /** Thông báo lỗi của bản web (tiếng Việt, có bản dịch trong i18n.svelte.ts › RUST_ERRORS). */
 export const WEB_ERR = {
-  net: "Không tải được dữ liệu (lỗi mạng). Thử lại",
+  net: "Không tải được dữ liệu (lỗi mạng)",
   manifest: "Không tải được từ điển (lỗi mạng hoặc máy chủ)",
   stale: "Đã có bản dữ liệu mới — tải lại trang",
   corrupt: "Dữ liệu của mục này bị lỗi, hãy tải lại trang",

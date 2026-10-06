@@ -7,6 +7,7 @@
   import { entryClip, senseClip } from "./copy";
   import type { Accent } from "./speech";
   import { t, ui } from "./i18n.svelte";
+  import { IS_WEB } from "./platform";
 
   let {
     entry,
@@ -169,6 +170,13 @@
 {/snippet}
 
 <div class="layout">
+  {#if IS_WEB && sections.length > 1}
+    <!-- màn hình hẹp (bản web, UC-W02): mục lục khối thu thành một thanh chọn dính đầu trang -->
+    <select class="toc-select" aria-label={t("inThisEntry")} onchange={(e) => { const el = e.target as HTMLSelectElement; if (el.value) jump(el.value); el.value = ""; }}>
+      <option value="">{t("inThisEntry")}…</option>
+      {#each sections as s}<option value={s.id}>{s.label}</option>{/each}
+    </select>
+  {/if}
   <article class="entry">
     <header class="head">
       <div class="title-row">
@@ -980,12 +988,30 @@
     color: var(--accent) !important;
   }
 
+  .toc-select {
+    display: none;
+  }
   @media (max-width: 980px) {
     .layout {
       grid-template-columns: 1fr;
     }
     .toc {
       display: none;
+    }
+    .toc-select {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 0.95rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
     }
     .phrases {
       columns: 1;

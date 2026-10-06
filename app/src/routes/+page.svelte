@@ -8,7 +8,7 @@
   import About from "$lib/About.svelte";
   import * as api from "$lib/api";
   import { cleanQuery, describeVia } from "$lib/api";
-  import { IS_WEB, downloadText, persistStorage, pickSavePath } from "$lib/platform";
+  import { DESKTOP_DOWNLOAD, IS_WEB, SITE_HOME, downloadText, persistStorage, pickSavePath } from "$lib/platform";
   import { writeClipboard } from "$lib/copy";
   import { setOnlineVoices, speak, type Accent } from "$lib/speech";
   import { APP_NAME, dateLocale, t, tErr, ui, type UiLang } from "$lib/i18n.svelte";
@@ -61,6 +61,12 @@
   let onlineVoices = $state(false); // bản web: cho dùng giọng đọc trực tuyến của trình duyệt (UC-W11)
   let copyManual = $state(""); // bản web: trình duyệt chặn clipboard → hiện chữ để người dùng tự chép
   let restoreInput: HTMLInputElement | undefined = $state();
+  let toastAction = $state<{ label: string; run: () => void } | null>(null); // bản web: nút "Thử lại" trong thông báo lỗi mạng
+  let sugLoading = $state(false); // bản web: mạng chậm → chỉ báo "đang tải" sau 300 ms (UC-W "Khi lỗi")
+  let sideOpen = $state(false); // màn hình hẹp: lịch sử / danh sách mở thành ngăn kéo
+  let pick = $state(""); // bản web, màn hình cảm ứng: từ đang được chọn → nút "Tra" nổi (UC-W02)
+  let navIdx = $state(0); // bản web: vị trí trong lịch sử trình duyệt (nút lùi/tiến, UC-W03)
+  let navMax = $state(0);
   let bannerReload = $state(false); // bản web: dải thông báo có nút "Tải lại" (UC-W10)
   let toast = $state("");
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -86,7 +92,7 @@
     }
     if (status.user_ok) {
       const st = await api.settings();
-      ui.lang = (st.ui_lang as UiLang) ?? "en";
+      ui.lang = (st.ui_lang as UiLang) ?? (IS_WEB && navigator.language?.toLowerCase().startsWith("vi") ? "vi" : "en");
       theme = (st.theme as typeof theme) ?? "auto";
       palette = (st.palette as typeof palette) ?? "classic";
       mode = (st.mode as Mode) ?? "envi";
@@ -103,6 +109,7 @@
       banner = t("userDbError", { e: tErr(status.user_error) });
     }
     if (status.user_notice) banner = tErr(status.user_notice);
+    if (IS_WEB) webInit();
     // Chỉ khi phát triển: ?lang=vi&palette=rose&theme=dark&mode=envi&q=make (hoặc &screen=about) để chụp ảnh màn hình (không lưu vào cài đặt)
     if (import.meta.env.DEV) {
       const p = new URLSearchParams(location.search);
@@ -117,6 +124,57 @@
     window.speechSynthesis?.getVoices(); // nạp sẵn danh sách giọng
     inputEl?.focus();
   });
+
+  /** Bản web: tham số ?lang=&theme= (UC-W04), địa chỉ "#" (UC-W03), nút "Tra" khi chọn từ trên màn hình cảm ứng (UC-W02). */
+  function webInit() {
+    const p = new URLSearchParams(location.search);
+    const lang = p.get("lang");
+    const th = p.get("theme");
+    if (lang === "en" || lang === "vi") ui.lang = lang;
+    if (th === "dark" || th === "light") theme = th;
+    if (p.has("lang") || p.has("theme")) history.replaceState(history.state, "", location.pathname + location.hash);
+    history.replaceState({ i: 0 }, "", location.href);
+    window.addEventListener("popstate", (e) => {
+      navIdx = (e.state as { i?: number } | null)?.i ?? navIdx + 1;
+      navMax = Math.max(navMax, navIdx);
+      routeFromHash();
+    });
+    if (location.hash.length > 2) routeFromHash();
+    if (matchMedia("(pointer: coarse)").matches) {
+      document.addEventListener("selectionchange", () => {
+        const sel = window.getSelection();
+        const w = sel?.toString().trim() ?? "";
+        pick = w && w.length <= 40 && /^[\p{L}'-]+$/u.test(w) && sel?.anchorNode && mainEl?.contains(sel.anchorNode) ? w : "";
+      });
+    }
+  }
+
+  // ---------- bản web: địa chỉ "#/en/<từ>", "#/vi/<từ>", "#/q/<chuỗi>", "#/about", "#/settings" (UC-W03) ----------
+  const enc = (w: string) => encodeURIComponent(w).replace(/%20/g, "+");
+  const dec = (w: string) => decodeURIComponent(w.replace(/\+/g, "%20"));
+  /** Ghi địa chỉ của màn hình vừa mở: thao tác của người dùng → mục mới trong lịch sử trình duyệt; còn lại → thay mục hiện tại. */
+  function setHash(hash: string, push: boolean) {
+    if (!IS_WEB) return;
+    if (push && location.hash !== hash) {
+      navIdx += 1;
+      navMax = navIdx;
+      history.pushState({ i: navIdx }, "", hash);
+    } else history.replaceState({ i: navIdx }, "", hash);
+  }
+  function routeFromHash() {
+    const h = location.hash.replace(/^#/, "");
+    if (h.startsWith("/en/")) {
+      if (mode === "vien") mode = "envi"; // mục tiếng Anh: không tra theo chiều Việt–Anh
+      go(dec(h.slice(4)), false);
+    } else if (h.startsWith("/vi/")) go(`vi:${dec(h.slice(4))}`, false);
+    else if (h.startsWith("/q/")) go(dec(h.slice(3)), false);
+    else if (h === "/about") showSources(false);
+    else if (h === "/settings") showSettings(false);
+    else {
+      screen = { kind: "home" };
+      current = "";
+    }
+  }
 
   /** Bản web: xin giữ dữ liệu lâu dài, nhắc sao lưu, đồng bộ khi quay lại tab (UC-W05, W07, "hai tab"). */
   function webStartup(st: Record<string, string>) {
@@ -189,8 +247,9 @@
     saveSetting("closed", [...next].join(","));
   }
 
-  function say(msg: string, ms = 4500) {
+  function say(msg: string, ms = 4500, action: { label: string; run: () => void } | null = null) {
     toast = msg;
+    toastAction = action;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => (toast = ""), ms);
   }
@@ -368,10 +427,14 @@
     }
     sugTimer = setTimeout(async () => {
       let r: Suggestion[];
+      const slow = setTimeout(() => seq === sugSeq && (sugLoading = true), 300);
       try {
         r = await api.suggest(q, mode);
       } catch {
         return; // bản web mất mạng: giữ gợi ý đang có, lỗi sẽ báo khi bấm tra
+      } finally {
+        clearTimeout(slow);
+        if (seq === sugSeq) sugLoading = false;
       }
       if (seq === sugSeq) suggestions = r; // bỏ kết quả cũ về muộn
     }, 60);
@@ -389,6 +452,8 @@
     suggestions = [];
     sugOpen = false;
     sugIndex = -1;
+    sideOpen = false;
+    pick = "";
     const key = raw.startsWith("vi:") ? `vi:${q}` : q;
     const seq = ++goSeq;
     let view: LookupView;
@@ -398,13 +463,13 @@
       if (view.kind === "en") entry = await api.getEntry(view.word);
       else if (view.kind === "vi") entry = await api.getViEntry(view.word);
     } catch (e) {
-      // bản web: lỗi mạng / dữ liệu mới — giữ nguyên màn hình đang xem, không báo "không tìm thấy"
-      if (seq === goSeq) say(tErr(e), 8000);
+      // bản web: lỗi mạng / dữ liệu mới — giữ nguyên màn hình đang xem, không báo "không tìm thấy"; có nút Thử lại
+      if (seq === goSeq) say(tErr(e), IS_WEB ? 30000 : 8000, IS_WEB ? { label: t("retry"), run: () => go(raw, push) } : null);
       return;
     }
     if (seq !== goSeq) return; // đã có lần tra mới hơn
     if (view.kind === "empty") return;
-    if (push && current && current !== key) {
+    if (!IS_WEB && push && current && current !== key) {
       back = [...back, current];
       fwd = [];
     }
@@ -428,20 +493,26 @@
     } else {
       screen = { kind: "none", query: view.query, suggestions: view.suggestions };
     }
+    setHash(view.kind === "en" ? `#/en/${enc(view.word)}` : view.kind === "vi" ? `#/vi/${enc(view.word)}` : `#/q/${enc(key)}`, push);
     await tick();
     mainEl?.scrollTo({ top: 0 });
   }
 
-  async function showSources() {
+  async function showSources(push = true) {
+    sideOpen = false;
     screen = { kind: "sources", list: await api.sources() };
     current = "";
+    setHash("#/about", push);
   }
-  function showSettings() {
+  function showSettings(push = true) {
+    sideOpen = false;
     screen = { kind: "settings" };
     current = "";
+    setHash("#/settings", push);
   }
 
   function goBack() {
+    if (IS_WEB) return history.back(); // bản web: dùng lịch sử của trình duyệt (UC-W03, U09)
     if (!back.length) return;
     fwd = [current, ...fwd];
     const prev = back[back.length - 1];
@@ -449,6 +520,7 @@
     go(prev, false);
   }
   function goFwd() {
+    if (IS_WEB) return history.forward();
     if (!fwd.length) return;
     back = [...back, current];
     const next = fwd[0];
@@ -474,8 +546,9 @@
   }
 
   function onGlobalKey(e: KeyboardEvent) {
-    if (e.altKey && e.key === "ArrowLeft") goBack();
-    if (e.altKey && e.key === "ArrowRight") goFwd();
+    // bản web: Alt+←/→ là phím của chính trình duyệt, không gọi thêm lần nữa
+    if (!IS_WEB && e.altKey && e.key === "ArrowLeft") goBack();
+    if (!IS_WEB && e.altKey && e.key === "ArrowRight") goFwd();
     if ((e.ctrlKey && e.key.toLowerCase() === "l") || (e.key === "/" && document.activeElement !== inputEl && !(document.activeElement instanceof HTMLInputElement))) {
       e.preventDefault();
       inputEl?.focus();
@@ -520,14 +593,15 @@
 
 <div class="app">
   <header class="topbar">
+    <button class="icon-btn menu-btn" onclick={() => (sideOpen = !sideOpen)} title={t("menu")} aria-label={t("menu")} aria-expanded={sideOpen}><Icon name="history" /></button>
     <div class="brand">
       <img class="logo" src={palette === "rose" ? "/logo-rose.png" : "/logo-classic.png"} alt="" width="30" height="30" />
       <span class="name">EC Advanced Learners' Dictionary</span>
     </div>
 
     <div class="nav">
-      <button class="icon-btn" disabled={!back.length} onclick={goBack} title={t("back")}><Icon name="back" /></button>
-      <button class="icon-btn" disabled={!fwd.length} onclick={goFwd} title={t("forward")}><Icon name="forward" /></button>
+      <button class="icon-btn" disabled={IS_WEB ? navIdx === 0 : !back.length} onclick={goBack} title={t("back")}><Icon name="back" /></button>
+      <button class="icon-btn" disabled={IS_WEB ? navIdx >= navMax : !fwd.length} onclick={goFwd} title={t("forward")}><Icon name="forward" /></button>
     </div>
 
     <div class="search">
@@ -538,14 +612,20 @@
         oninput={onInput}
         onkeydown={onKey}
         onblur={() => setTimeout(() => (sugOpen = false), 150)}
-        placeholder={mode === "vien" ? t("searchPlaceholderVi") : t("searchPlaceholder")}
+        placeholder={mode === "vien" ? t("searchPlaceholderVi") : IS_WEB ? t("searchPlaceholderWeb") : t("searchPlaceholder")}
         spellcheck="false"
         autocomplete="off"
+        autocapitalize="off"
+        inputmode="search"
+        enterkeyhint="search"
         aria-label={t("searchLabel")}
         disabled={!status?.ok}
       />
       {#if query}
         <button class="clear" onclick={() => { query = ""; suggestions = []; }} title={t("clear")} aria-label={t("clear")}><Icon name="x" size={14} /></button>
+      {/if}
+      {#if sugOpen && sugLoading && !suggestions.length}
+        <ul class="sugs"><li class="sug-loading">{t("loadingSugs")}</li></ul>
       {/if}
       {#if sugOpen && suggestions.length}
         <ul class="sugs" role="listbox">
@@ -592,10 +672,11 @@
       <Icon name={theme === "dark" ? "moon" : "sun"} />
       <span class="theme-label">{theme === "auto" ? t("themeAuto") : theme === "dark" ? t("themeDark") : t("themeLight")}</span>
     </button>
-    <button class="icon-btn" onclick={showSettings} title={t("settings")} aria-label={t("settings")}><Icon name="gear" /></button>
+    <button class="icon-btn" onclick={() => showSettings()} title={t("settings")} aria-label={t("settings")}><Icon name="gear" /></button>
   </header>
 
-  <aside class="side">
+  {#if sideOpen}<div class="side-bg" role="presentation" onclick={() => (sideOpen = false)}></div>{/if}
+  <aside class="side" class:open={sideOpen}>
     <div class="tabs">
       <button class:on={tab === "history"} onclick={() => (tab = "history")}>{t("tabHistory")}</button>
       <button class:on={tab === "lists"} onclick={() => (tab = "lists")}>{t("tabLists")}</button>
@@ -648,7 +729,7 @@
         {/if}
       {/if}
     </div>
-    <button class="side-foot" onclick={showSources}>{t("sourcesLink")}</button>
+    <button class="side-foot" onclick={() => showSources()}>{t("sourcesLink")}</button>
   </aside>
 
   <main class="main" bind:this={mainEl} ondblclick={onDbl}>
@@ -662,6 +743,16 @@
       {/if}
       {#if !status}
         <p class="muted">{t("opening")}</p>
+      {:else if !status.ok && IS_WEB}
+        <section class="recover">
+          <h1>{t("webDownTitle")}</h1>
+          <p>{tErr(status.error)}</p>
+          <p>{t("webDownHelp")}</p>
+          <p>
+            <button class="k" onclick={() => location.reload()}>{t("retry")}</button>
+            <a class="k" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener">{t("downloadDesktop")}</a>
+          </p>
+        </section>
       {:else if !status.ok}
         <section class="recover">
           <h1>{t("recoverTitle")}</h1>
@@ -698,6 +789,9 @@
               <button class="big" onclick={() => go(w)}>{w}</button>
             {/each}
           </div>
+          {#if IS_WEB}
+            <p class="desktop-dl"><a href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener">{t("downloadDesktop")}</a></p>
+          {/if}
         </section>
       {:else if screen.kind === "entry"}
         {#if screen.via}<div class="notice">{describeVia(screen.via)}.</div>{/if}
@@ -827,17 +921,41 @@
           </div>
           <div class="row">
             <div class="lab">{t("setAbout")}</div>
-            <div class="ctl"><button class="link" onclick={showSources}>{t("sourcesLink")}</button></div>
+            <div class="ctl"><button class="link" onclick={() => showSources()}>{t("sourcesLink")}</button></div>
           </div>
         </section>
       {:else if screen.kind === "sources"}
         <About sources={screen.list} {status} logo={palette === "rose" ? "/logo-rose.png" : "/logo-classic.png"} />
       {/if}
+      {#if IS_WEB}
+        <footer class="site-foot">
+          {t("footData")} · <button class="k" onclick={() => showSources()}>{t("footAbout")}</button> ·
+          <a href={SITE_HOME} target="_blank" rel="noopener">EdTech Corner</a>
+        </footer>
+      {/if}
     </div>
   </main>
 
+  {#if pick}
+    <button class="pick" onmousedown={(e) => e.preventDefault()} onclick={() => { const w = pick; window.getSelection()?.removeAllRanges(); go(w); }}>
+      <Icon name="search" size={15} /> {t("lookUpSel", { w: pick })}
+    </button>
+  {/if}
+
   {#if toast}
-    <div class="toast" role="status">{toast}</div>
+    <div class="toast" role="status">
+      {toast}
+      {#if toastAction}
+        <button
+          class="toast-btn"
+          onclick={() => {
+            const run = toastAction?.run; // lấy hàm TRƯỚC khi xoá: giá trị trong template đọc lại toastAction
+            toast = "";
+            toastAction = null;
+            run?.();
+          }}>{toastAction.label}</button>
+      {/if}
+    </div>
   {/if}
   {#if copyManual}
     <div class="modal-bg" role="presentation" onclick={(e) => e.target === e.currentTarget && (copyManual = "")}>
@@ -1422,17 +1540,159 @@
     max-width: 90vw;
   }
 
+  .menu-btn {
+    display: none;
+  }
+  .sug-loading {
+    padding: 7px 10px;
+    color: var(--ink-3);
+    font-size: 0.88rem;
+  }
+  .toast-btn {
+    margin-left: 10px;
+    border: 1px solid currentColor;
+    background: none;
+    color: inherit;
+    border-radius: 5px;
+    padding: 2px 10px;
+    font: inherit;
+    cursor: pointer;
+  }
+  .site-foot {
+    margin-top: 32px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-size: 0.8rem;
+    color: var(--ink-3);
+  }
+  .site-foot a {
+    color: inherit;
+  }
+  .desktop-dl {
+    margin-top: 18px;
+  }
+  .desktop-dl a {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .pick {
+    position: fixed;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 45;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 18px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+    max-width: calc(100vw - 32px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .side-bg {
+    display: none;
+  }
+  .main {
+    touch-action: manipulation;
+  }
+
   @media (max-width: 860px) {
     .app {
       grid-template-columns: 1fr;
+      height: 100dvh;
     }
-    .side,
     .brand .name,
     .theme-label {
       display: none;
     }
     .brand {
       min-width: 0;
+    }
+    /* lịch sử / danh sách: ngăn kéo trượt từ trái (trước đây bị ẩn hẳn trên màn hình hẹp) */
+    .menu-btn {
+      display: inline-flex;
+    }
+    .side {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: min(300px, 86vw);
+      z-index: 41;
+      transform: translateX(-102%);
+      transition: transform 0.18s ease-out;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+    }
+    .side.open {
+      transform: none;
+    }
+    .side-bg {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  /* điện thoại (UC-W02): thanh trên cùng hai–ba hàng, ô tìm cả chiều ngang, nút đủ lớn để chạm */
+  @media (max-width: 640px) {
+    .topbar {
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 10px;
+    }
+    .nav,
+    .icon-btn.palette {
+      display: none;
+    }
+    .brand {
+      flex: 1;
+    }
+    .search {
+      order: 10;
+      flex-basis: 100%;
+      max-width: none;
+    }
+    .search input {
+      height: 42px;
+      font-size: 16px; /* < 16px thì iOS tự phóng to khi gõ */
+    }
+    .modes {
+      order: 11;
+      flex-basis: 100%;
+    }
+    .modes button {
+      flex: 1;
+      padding: 8px 4px;
+    }
+    .icon-btn {
+      height: 38px;
+      min-width: 38px;
+    }
+    .content {
+      padding: 14px 14px 72px;
+    }
+    .sugs button {
+      padding: 10px 10px;
+    }
+    .side-list button {
+      padding: 9px 10px;
+    }
+    .settings .row {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .settings .ctl {
+      flex-wrap: wrap;
     }
   }
 </style>
