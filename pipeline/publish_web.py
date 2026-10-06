@@ -9,7 +9,7 @@ Bố cục repo site (thư mục publish của Netlify = gốc repo, không có 
   index.html, _app/, favicon.png, logo-*.png    ← app/build-web/
   data/manifest.json                            ← data/build/web/manifest.json
   data/v<phiên bản>-<sha8>/                     ← bản dữ liệu hiện hành + giữ MỘT bản liền trước (tab đang mở không lỗi, UC-W10)
-  _headers, robots.txt, .gitattributes, README.md, LICENSE
+  _headers, netlify.toml, robots.txt, .gitattributes, README.md, LICENSE
 
 Quy tắc (use case người bảo trì web):
   - repo site có thay đổi chưa commit → dừng, không ghi đè;
@@ -32,7 +32,7 @@ LICENSE = ROOT / "LICENSE"
 SOURCE_REPO = "https://github.com/nguyennhuanhle/ec-advanced-learners-dictionary"
 
 ALLOWED_EXT = {".html", ".js", ".css", ".json", ".txt", ".md", ".png", ".webp", ".ico", ".svg", ".woff2"}
-ALLOWED_NAMES = {"_headers", "LICENSE", ".gitattributes", "robots.txt", "README.md"}
+ALLOWED_NAMES = {"_headers", "LICENSE", ".gitattributes", "robots.txt", "README.md", "netlify.toml"}
 MAX_FILES = 10_000
 MAX_FILE_BYTES = 5 * 1024 * 1024
 
@@ -57,6 +57,12 @@ HEADERS = """/*
 ROBOTS = """User-agent: *
 Allow: /
 Disallow: /data/
+"""
+
+# site tĩnh dựng sẵn: Netlify publish thẳng gốc repo, không chạy lệnh build nào (khỏi đoán nhầm framework)
+NETLIFY_TOML = """[build]
+  publish = "."
+  command = "echo 'prebuilt static site, nothing to build'"
 """
 
 # mọi file là nhị phân với git: không đổi xuống dòng → byte trên site đúng như bản xuất (thư mục dữ liệu mang mã băm nội dung)
@@ -134,6 +140,7 @@ def main():
     (site / "_headers").write_text(HEADERS, encoding="utf-8", newline="\n")
     (site / "robots.txt").write_text(ROBOTS, encoding="utf-8", newline="\n")
     (site / ".gitattributes").write_text(GITATTRIBUTES, encoding="utf-8", newline="\n")
+    (site / "netlify.toml").write_text(NETLIFY_TOML, encoding="utf-8", newline="\n")
     (site / "README.md").write_text(README, encoding="utf-8", newline="\n")
     shutil.copy2(LICENSE, site / "LICENSE")
 
