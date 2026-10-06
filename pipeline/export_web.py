@@ -380,6 +380,14 @@ def job_forms(forms):
 # ---------------------------------------------------------------- chỉ mục tiền tố
 
 SPACE, OTHER = "_", "~"
+# Tên thiết bị của Windows (CON, PRN, AUX, NUL — khoá chỉ có a–z, "_", "~" nên COM1/LPT1 không xảy ra) không dùng được làm
+# tên file, kể cả có đuôi: git trên Windows không đọc được "con.json" → thêm "-" (web/core.ts › prefixFile làm y hệt).
+RESERVED_NAMES = {"con", "prn", "aux", "nul"}
+
+
+def prefix_file(k):
+    return f"{k}-" if k in RESERVED_NAMES else k
+
 MAX_KEY = 4   # tiền tố dài nhất khi tách
 
 
@@ -598,7 +606,7 @@ def main():
     t1 = time.time()
     groups, split, norm_diff, (top_ok, top_n, top_miss) = build_prefix(con, form_items)
     for k, d in groups.items():
-        _write(vdir / "p" / f"{k}.json", dumps(d))
+        _write(vdir / "p" / f"{prefix_file(k)}.json", dumps(d))
     print(f"Chỉ mục tiền tố: {len(groups)} file, tách thêm chữ: {len(split)} khoá, "
           f"norm DB ≠ norm tính lại: {norm_diff} từ, top khớp thứ tự lọc+sắp: {top_ok}/{top_n} {top_miss or ''}({time.time() - t1:.1f} s)")
 
@@ -623,6 +631,11 @@ def main():
     bad_ext = [p.relative_to(STAGE).as_posix() for p in STAGE.rglob("*") if p.is_file() and p.suffix not in ALLOWED_EXT]
     if bad_ext:
         stop(f"thư mục xuất có loại file không cho phép ({sorted(ALLOWED_EXT)}): {bad_ext[:10]}")
+    # tên thiết bị Windows làm tên file → git trên Windows không đọc được, file biến mất khỏi site (lỗi đã gặp ở W5)
+    devices = {"con", "prn", "aux", "nul"} | {f"{d}{i}" for d in ("com", "lpt") for i in range(10)}
+    bad_name = [p.relative_to(STAGE).as_posix() for p in STAGE.rglob("*") if p.stem.split(".")[0].lower() in devices]
+    if bad_name:
+        stop(f"tên file trùng tên thiết bị của Windows: {bad_name[:10]}")
     for need in ("sources.json", "LICENSES.md", "words.txt"):
         if not (vdir / need).is_file() or (vdir / need).stat().st_size == 0:
             stop(f"thiếu {need}")

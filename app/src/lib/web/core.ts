@@ -76,6 +76,11 @@ export function rustTrim(s: string): string {
   return cps.slice(a, b).join("");
 }
 
+/** Tên file của khoá tiền tố: tên thiết bị Windows (con, prn, aux, nul) không làm tên file được → thêm "-"
+ *  (= export_web.py › prefix_file). */
+const RESERVED_NAMES = new Set(["con", "prn", "aux", "nul"]);
+export const prefixFile = (key: string) => (RESERVED_NAMES.has(key) ? `${key}-` : key);
+
 /** str::split_whitespace của Rust. */
 export function splitWhitespace(s: string): string[] {
   return s.split(WS_RUN).filter((x) => x !== "");
@@ -243,7 +248,7 @@ export class DictCore {
   private prefix(key: string): Promise<Prefix | null> {
     let p = this.prefixCache.get(key);
     if (!p) {
-      p = this.src.json<PrefixFile>(`p/${key}.json`, "prefix").then((raw) =>
+      p = this.src.json<PrefixFile>(`p/${prefixFile(key)}.json`, "prefix").then((raw) =>
         raw
           ? {
               h: raw.h.map((x) => ({ word: x[0], rank: x[1], norm: x[2] ?? norm(x[0]) })),
