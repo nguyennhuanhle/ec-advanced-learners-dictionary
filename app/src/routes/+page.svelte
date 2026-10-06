@@ -672,6 +672,15 @@
       <Icon name={theme === "dark" ? "moon" : "sun"} />
       <span class="theme-label">{theme === "auto" ? t("themeAuto") : theme === "dark" ? t("themeDark") : t("themeLight")}</span>
     </button>
+    {#if IS_WEB}
+      <!-- bản web (UC-W09): tải bản Windows dùng offline, về trang Edtech Corner — mở tab mới -->
+      <a class="icon-btn" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener" title={t("downloadDesktop")} aria-label={t("downloadDesktop")}>
+        <Icon name="download" /><span class="wide-label">{t("offlineShort")}</span>
+      </a>
+      <a class="icon-btn" href={SITE_HOME} target="_blank" rel="noopener" title={t("goSite")} aria-label={t("goSite")}>
+        <Icon name="home" /><span class="wide-label">EdTech Corner</span>
+      </a>
+    {/if}
     <button class="icon-btn" onclick={() => showSettings()} title={t("settings")} aria-label={t("settings")}><Icon name="gear" /></button>
   </header>
 
@@ -1542,6 +1551,19 @@
 
   .menu-btn {
     display: none;
+  }
+  a.icon-btn {
+    text-decoration: none;
+  }
+  .wide-label {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  /* nhãn chữ cạnh hai nút liên kết chỉ hiện khi thanh trên cùng đủ rộng */
+  @media (max-width: 1679px) {
+    .wide-label {
+      display: none;
+    }
   }
   .sug-loading {
     padding: 7px 10px;

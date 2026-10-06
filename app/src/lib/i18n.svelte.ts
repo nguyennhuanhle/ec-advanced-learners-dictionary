@@ -228,6 +228,8 @@ const en = {
   footData: "Dictionary data: Wiktionary and other open sources, CC BY-SA 4.0",
   footAbout: "About & licence",
   lookUpSel: "Look up “{w}”",
+  offlineShort: "Offline app",
+  goSite: "Go to edtechcorner.com",
   // nguồn khi sao chép
   copyFoot: "Source: Wiktionary (CC BY-SA 4.0)",
   copyFootAi: "; re-edited with AI (Gemini)",
@@ -446,6 +448,8 @@ const vi: Record<Key, string> = {
   footData: "Dữ liệu từ điển: Wiktionary và các nguồn mở khác, CC BY-SA 4.0",
   footAbout: "Giới thiệu & giấy phép",
   lookUpSel: "Tra “{w}”",
+  offlineShort: "Bản offline",
+  goSite: "Tới trang edtechcorner.com",
   copyFoot: "Nguồn: Wiktionary (CC BY-SA 4.0)",
   copyFootAi: "; biên soạn lại bằng AI (Gemini)",
 };

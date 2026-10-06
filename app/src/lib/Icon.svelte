@@ -42,6 +42,8 @@
     <path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14" />
   {:else if name === "pencil"}
     <path d="M4 20h4L19 9l-4-4L4 16v4z" />
+  {:else if name === "home"}
+    <path d="M3 11 12 4l9 7M5 10v10h5v-6h4v6h5V10" />
   {:else if name === "x"}
     <path d="M18 6 6 18M6 6l12 12" />
   {/if}

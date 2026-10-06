@@ -4,7 +4,8 @@
   import { APP_NAME, t, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { DESKTOP_DOWNLOAD, IS_WEB, openExternalUrl } from "./platform";
+  import { DESKTOP_DOWNLOAD, IS_WEB, SITE_HOME, openExternalUrl } from "./platform";
+  import Icon from "./Icon.svelte";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
 
@@ -405,6 +406,12 @@
       </div>
     </div>
   </header>
+  {#if IS_WEB}
+    <div class="hero-links">
+      <a class="btn primary" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {t("downloadDesktop")}</a>
+      <a class="btn" href={SITE_HOME} target="_blank" rel="noopener"><Icon name="home" size={16} /> {t("goSite")}</a>
+    </div>
+  {/if}
   <p class="intro">{IS_WEB ? c.introWeb : c.intro}</p>
 
   <nav class="toc">
@@ -523,6 +530,30 @@
     gap: 6px 18px;
     font-size: 0.82rem;
     opacity: 0.92;
+  }
+  .hero-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 14px 0 0;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+  }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
   }
   .intro {
     margin: 16px 0 10px;
