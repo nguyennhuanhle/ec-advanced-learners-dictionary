@@ -22,10 +22,16 @@ const config = {
           mode: "hash",
           directives: {
             "default-src": ["self"],
-            "script-src": ["self"],
-            "connect-src": ["self"],
+            // Google Analytics (UC-W15): gtag.js + gửi lượt xem; không thêm script nội tuyến nào
+            "script-src": ["self", "https://www.googletagmanager.com"],
+            "connect-src": [
+              "self",
+              "https://*.google-analytics.com",
+              "https://*.analytics.google.com",
+              "https://*.googletagmanager.com",
+            ],
             "worker-src": ["self"],
-            "img-src": ["self", "data:"],
+            "img-src": ["self", "data:", "https://*.google-analytics.com", "https://*.googletagmanager.com"],
             "style-src": ["self", "unsafe-inline"],
             "object-src": ["none"],
             "base-uri": ["self"],

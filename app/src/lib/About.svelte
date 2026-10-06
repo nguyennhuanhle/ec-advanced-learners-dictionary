@@ -186,7 +186,8 @@
       webPrivacyTitle: "Privacy (web version)",
       webPrivacy: [
         "This page only downloads the dictionary's own files from dictionary.edtechcorner.com: the page itself and small data files for the words you look up.",
-        "Nothing about you is sent anywhere: no account, no analytics, no advertising, no third-party scripts. The word you look up stays after the “#” in the address, so it is not sent to the server; the server only sees which data file was downloaded, and each file covers dozens of words.",
+        "No account, no advertising. The word you look up stays after the “#” in the address, so it is not sent to the server; the server only sees which data file was downloaded, and each file covers dozens of words.",
+        "The site uses Google Analytics only to count page visits (anonymous statistics such as country, device and browser). The dictionary removes the “#…” part of the address before anything reaches Google and sends no events for lookups, word lists or settings, so Google does not learn which words you look up. Google Analytics sets its own cookies; you can block it in your browser settings or with an ad blocker, and the dictionary works the same.",
         "Your history, word lists and settings are stored only in this browser on this device. Use Settings › Download backup to keep a copy or to move them to another device.",
         "Read-aloud uses the voices on your device. Online voices, which send the text to the browser maker's server, stay off unless you turn them on in Settings.",
       ],
@@ -360,7 +361,8 @@
       webPrivacyTitle: "Quyền riêng tư (bản web)",
       webPrivacy: [
         "Trang chỉ tải các file của chính từ điển từ dictionary.edtechcorner.com: bản thân trang và các file dữ liệu nhỏ chứa từ bạn tra.",
-        "Không gửi gì về bạn đi đâu cả: không tài khoản, không thống kê truy cập, không quảng cáo, không script của bên thứ ba. Từ bạn tra nằm sau dấu “#” trên địa chỉ nên không được gửi lên máy chủ; máy chủ chỉ thấy file dữ liệu nào được tải, mỗi file chứa vài chục từ.",
+        "Không tài khoản, không quảng cáo. Từ bạn tra nằm sau dấu “#” trên địa chỉ nên không được gửi lên máy chủ; máy chủ chỉ thấy file dữ liệu nào được tải, mỗi file chứa vài chục từ.",
+        "Trang dùng Google Analytics chỉ để đếm lượt mở trang (thống kê ẩn danh như quốc gia, thiết bị, trình duyệt). Từ điển bỏ phần “#…” của địa chỉ trước khi gửi cho Google và không gửi sự kiện nào khi bạn tra từ, lưu từ hay đổi cài đặt, nên Google không biết bạn tra từ gì. Google Analytics dùng cookie riêng; bạn có thể chặn bằng cài đặt trình duyệt hoặc trình chặn quảng cáo, từ điển vẫn chạy bình thường.",
         "Lịch sử, danh sách từ và cài đặt chỉ lưu trong trình duyệt này trên thiết bị này. Dùng Cài đặt › Tải file sao lưu để giữ một bản hoặc chuyển sang thiết bị khác.",
         "Đọc to dùng giọng đọc trên thiết bị. Giọng đọc trực tuyến (gửi chữ cần đọc tới máy chủ của hãng trình duyệt) luôn tắt trừ khi bạn bật trong Cài đặt.",
       ],

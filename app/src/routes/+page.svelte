@@ -10,6 +10,7 @@
   import { cleanQuery, describeVia } from "$lib/api";
   import { DESKTOP_DOWNLOAD, IS_WEB, SITE_HOME, downloadText, persistStorage, pickSavePath } from "$lib/platform";
   import { writeClipboard } from "$lib/copy";
+  import { initAnalytics } from "$lib/analytics";
   import { setOnlineVoices, speak, type Accent } from "$lib/speech";
   import { APP_NAME, dateLocale, t, tErr, ui, type UiLang } from "$lib/i18n.svelte";
   import type { DbStatus, EnEntry, HistoryRow, ListInfo, ListItem, LookupView, Mode, Source, Suggestion, Via, ViEntry } from "$lib/types";
@@ -127,6 +128,7 @@
 
   /** Bản web: tham số ?lang=&theme= (UC-W04), địa chỉ "#" (UC-W03), nút "Tra" khi chọn từ trên màn hình cảm ứng (UC-W02). */
   function webInit() {
+    initAnalytics(); // UC-W15: chỉ đếm lượt mở trang, không gửi phần "#…"
     const p = new URLSearchParams(location.search);
     const lang = p.get("lang");
     const th = p.get("theme");
