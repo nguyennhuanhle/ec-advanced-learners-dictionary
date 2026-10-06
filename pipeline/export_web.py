@@ -648,11 +648,13 @@ def main():
     for f in files:
         h.update(f.relative_to(vdir).as_posix().encode("utf-8") + b"\0" + f.read_bytes() + b"\0")
     vname = f"v{ver}-{h.hexdigest()[:8]}"
-    vdir = vdir.rename(STAGE / vname)
+    # mọi bản dữ liệu nằm dưới data/v/ để quy tắc lưu đệm "bất biến" (/data/v/*) không bao giờ khớp manifest.json
+    (STAGE / "v").mkdir()
+    vdir = vdir.rename(STAGE / "v" / vname)
     files = [vdir / f.relative_to(STAGE / f"v{ver}") for f in files]
     manifest = {
         "schema_web": SCHEMA_WEB, "data_version": ver, "build_date": meta.get("build_date"), "min_ui": MIN_UI,
-        "base": f"{vname}/", "en_shards": EN_SHARDS, "vi_shards": VI_SHARDS, "hash": "fnv1a32",
+        "base": f"v/{vname}/", "en_shards": EN_SHARDS, "vi_shards": VI_SHARDS, "hash": "fnv1a32",
         "prefix": {"len": 2, "max_len": MAX_KEY, "space": SPACE, "other": OTHER, "split": split,
                    "split_bytes": SPLIT_BYTES},
         "relations": {v: k for k, v in REL.items()},
@@ -676,7 +678,7 @@ def main():
     STAGE.rename(OUT)
     print(f"\nĐã xuất {OUT} — {n_en} mục Anh, {n_vi} mục Việt, {len(files)} file, {total / 2**20:.1f} MiB chưa nén "
           f"(thời gian dựng {time.time() - t0:.1f} s)\n")
-    print_stats(measure(OUT / vname, args.jobs))
+    print_stats(measure(OUT / "v" / vname, args.jobs))
     print(f"\nTổng thời gian: {time.time() - t0:.1f} s")
 
 

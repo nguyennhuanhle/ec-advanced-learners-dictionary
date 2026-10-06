@@ -8,7 +8,7 @@ Dùng:
 Bố cục repo site (thư mục publish của Netlify = gốc repo, không có lệnh build):
   index.html, _app/, favicon.png, logo-*.png    ← app/build-web/
   data/manifest.json                            ← data/build/web/manifest.json
-  data/v<phiên bản>-<sha8>/                     ← bản dữ liệu hiện hành + giữ MỘT bản liền trước (tab đang mở không lỗi, UC-W10)
+  data/v/v<phiên bản>-<sha8>/                   ← bản dữ liệu hiện hành + giữ MỘT bản liền trước (tab đang mở không lỗi, UC-W10)
   _headers, netlify.toml, robots.txt, .gitattributes, README.md, LICENSE
 
 Quy tắc (use case người bảo trì web):
@@ -39,7 +39,8 @@ MAX_FILE_BYTES = 5 * 1024 * 1024
 # Netlify: header cho mọi trang + lưu đệm lâu cho file có tên/thư mục mang mã băm (bất biến).
 # CSP chính nằm trong thẻ meta do SvelteKit sinh (có mã băm script khởi động); header chỉ thêm frame-ancestors —
 # đặt script-src ở header sẽ chặn chính script đó. manifest.json / index.html giữ mặc định của Netlify
-# (max-age=0, must-revalidate = luôn hỏi lại máy chủ), không khớp quy tắc nào bên dưới.
+# (max-age=0, must-revalidate = luôn hỏi lại máy chủ), không khớp quy tắc nào bên dưới. Lưu ý: ở Netlify "/data/:version/*"
+# khớp cả "/data/manifest.json" (đã gặp ở W5) → dữ liệu theo phiên bản nằm riêng dưới /data/v/.
 HEADERS = """/*
   Content-Security-Policy: frame-ancestors 'none'
   X-Frame-Options: DENY
@@ -50,7 +51,7 @@ HEADERS = """/*
 /_app/immutable/*
   Cache-Control: public, max-age=31536000, immutable
 
-/data/:version/*
+/data/v/*
   Cache-Control: public, max-age=31536000, immutable
 """
 
@@ -111,14 +112,14 @@ def main():
         stop("repo site có thay đổi chưa commit, không ghi đè:\n" + dirty)
 
     manifest = json.loads((DATA / "manifest.json").read_text(encoding="utf-8"))
-    cur = manifest["base"].strip("/")
+    cur = manifest["base"].strip("/")  # "v/v<phiên bản>-<sha8>"
     if not (DATA / cur).is_dir():
         stop(f"manifest trỏ tới {cur} nhưng không có thư mục đó")
 
     # bản dữ liệu đang chạy trên site (manifest cũ) → giữ lại một bản liền trước
     old_manifest = site / "data" / "manifest.json"
     prev = json.loads(old_manifest.read_text(encoding="utf-8"))["base"].strip("/") if old_manifest.is_file() else None
-    keep = {cur} | ({prev} if prev and prev != cur else set())
+    keep = {cur} | ({prev} if prev and prev != cur else set())  # đường dẫn tương đối trong data/
 
     # dọn mọi thứ do script quản lý (trừ .git và các bản dữ liệu giữ lại), rồi chép mới
     for p in site.iterdir():
@@ -126,7 +127,10 @@ def main():
             continue
         if p.name == "data":
             for q in p.iterdir():
-                if q.is_dir() and q.name in keep:
+                if q.name == "v" and q.is_dir():
+                    for r in q.iterdir():
+                        if f"v/{r.name}" not in keep:
+                            shutil.rmtree(r) if r.is_dir() else r.unlink()
                     continue
                 shutil.rmtree(q) if q.is_dir() else q.unlink()
             continue
@@ -156,7 +160,8 @@ def main():
         stop(f"{len(files)} file > ngưỡng {MAX_FILES}")
     total = sum(p.stat().st_size for p in files)
     print(f"Đã chép vào {site}: {len(files)} file, {total / 2**20:.1f} MiB")
-    print(f"  dữ liệu hiện hành: data/{cur}/" + (f"; giữ bản trước: data/{prev}/" if prev and prev != cur else ""))
+    kept = prev if prev and prev != cur and (site / "data" / prev).is_dir() else None
+    print(f"  dữ liệu hiện hành: data/{cur}/" + (f"; giữ bản trước: data/{kept}/" if kept else ""))
     print(f"  file lớn nhất: {max(files, key=lambda p: p.stat().st_size).relative_to(site).as_posix()}")
 
     if a.commit:
