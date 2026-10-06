@@ -56,6 +56,7 @@ const en = {
   sourcesLink: "About, sources and licence",
   setAbout: "About",
   close: "Close",
+  reload: "Reload",
   // màn hình chính
   opening: "Opening dictionary data…",
   recoverTitle: "Dictionary data is missing or damaged",
@@ -242,6 +243,7 @@ const vi: Record<Key, string> = {
   sourcesLink: "Giới thiệu, nguồn và giấy phép",
   setAbout: "Giới thiệu",
   close: "Đóng",
+  reload: "Tải lại",
   opening: "Đang mở dữ liệu…",
   recoverTitle: "Dữ liệu từ điển bị thiếu hoặc hỏng",
   recoverPath: "Đường dẫn:",
@@ -394,6 +396,16 @@ const RUST_ERRORS: [RegExp, string][] = [
   [/^Danh sách đang trống, chưa có gì để xuất$/, "This list is empty; there is nothing to export"],
   [/^Chưa chọn nơi lưu file$/, "No file location chosen"],
   [/^Không ghi được (.+?): (.+)$/, "Could not write $1: $2"],
+  // bản web (web/protocol.ts › WEB_ERR)
+  [/^Không tải được dữ liệu \(lỗi mạng\)\. Thử lại$/, "Could not load the data (network error). Please try again"],
+  [/^Không tải được từ điển \(lỗi mạng hoặc máy chủ\)$/, "Could not load the dictionary (network or server error)"],
+  [/^Đã có bản dữ liệu mới — tải lại trang$/, "A new version of the dictionary data is available — reload the page"],
+  [/^Dữ liệu của mục này bị lỗi, hãy tải lại trang$/, "The data for this entry is damaged; please reload the page"],
+  [/^Trình duyệt này quá cũ \(thiếu Web Worker hoặc fetch\) — hãy dùng trình duyệt mới hơn$/,
+    "This browser is too old (no Web Worker or fetch) — please use a newer browser"],
+  [/^Bản web chưa xuất được CSV \(sẽ có ở vòng W3\)$/, "CSV export is not available in the web version yet"],
+  [/^Dữ liệu web dành cho phiên bản khác của giao diện \(định dạng (.+), giao diện cần (.+)\) — hãy tải lại trang$/,
+    "The web data is for a different version of the page (format $1, the page needs $2) — please reload"],
   [/^Dữ liệu cá nhân bị hỏng nên app đã tạo bản mới\. Bản cũ được giữ ở: (.+)$/,
     "Your personal data was damaged, so a fresh copy was created. The old file was kept at: $1"],
 ];

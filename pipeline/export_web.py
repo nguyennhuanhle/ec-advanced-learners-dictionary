@@ -19,7 +19,7 @@ Bố cục (PLAN-web 4.2):
         "f": [[form_norm, lemma, "i"|"v", tags(, [≤3 lemma cho gợi ý nếu khác [lemma]])]…]  lemma = đúng lựa chọn của en_resolve
         "v": [[từ Việt, trọng số(, norm)]…]                          sắp theo (trọng số giảm, độ dài, norm, từ)
         "top": {"en": [10 từ], "vi": [8 từ]}  = đúng kết quả SQL của suggest() (xem has_top())
-  v<ver>/words.txt     từ\tthứ hạng (gợi ý chính tả)
+  v<ver>/words.txt     từ\tthứ hạng (gợi ý chính tả), theo thứ tự rowid của fts_headword (để mô phỏng bm25 + LIMIT 600)
   v<ver>/sources.json  bảng source (= lệnh "sources")
   v<ver>/LICENSES.md   như gói .tdpack (pack.licenses_md())
 """
@@ -51,7 +51,7 @@ MIN_UI = "0.1.0"          # phiên bản giao diện web tối thiểu đọc đ
 DB_SCHEMA = "2"           # = db.rs::SCHEMA_VERSION
 EN_SHARDS = 2048
 VI_SHARDS = 1024
-SPLIT_BYTES = 64 * 1024   # tiền tố 2 chữ chưa nén lớn hơn → tách 3 chữ
+SPLIT_BYTES = 128 * 1024  # tiền tố chưa nén lớn hơn → tách thêm một chữ (người dùng chọn 128 KiB ở W2; W1 dùng 64 KiB)
 MAX_FILES = 10_000        # ngưỡng hosting (use-cases: lỗi người bảo trì)
 MAX_FILE_BYTES = 5 * 1000 * 1000
 ALLOWED_EXT = {".json", ".txt", ".md"}
@@ -601,10 +601,19 @@ def main():
     print(f"Chỉ mục tiền tố: {len(groups)} file, tách thêm chữ: {len(split)} khoá, "
           f"norm DB ≠ norm tính lại: {norm_diff} từ, top khớp thứ tự lọc+sắp: {top_ok}/{top_n} {top_miss or ''}({time.time() - t1:.1f} s)")
 
+    db_counts = {k: con.execute(sql).fetchone()[0] for k, sql in (
+        ("headwords", "SELECT count(*) FROM headword"), ("entries", "SELECT count(*) FROM entry"),
+        ("entries_ai", "SELECT count(*) FROM entry WHERE ai_model IS NOT NULL"),
+        ("vi_headwords", "SELECT count(*) FROM vi_headword"))}
     n_entries = con.execute("SELECT count(*) FROM entry").fetchone()[0]
     n_entries_ai = con.execute("SELECT count(*) FROM entry WHERE ai_model IS NOT NULL").fetchone()[0]
     rank = dict(con.execute("SELECT word, freq_rank FROM headword"))
-    _write(vdir / "words.txt", "".join(f"{w}\t{'' if rank[w] is None else rank[w]}\n" for w in hw).encode("utf-8"))
+    # words.txt theo đúng thứ tự rowid của fts_headword: bản web mô phỏng "ORDER BY rank LIMIT 600" của db.rs::fuzzy
+    # (bm25 của FTS5); khi hoà điểm FTS5 trả theo rowid → cần cùng thứ tự để chọn đúng 600 ứng viên như desktop.
+    fts_order = [r[0] for r in con.execute("SELECT word FROM fts_headword ORDER BY rowid")]
+    if sorted(fts_order) != hw:
+        stop("fts_headword không khớp bảng headword → words.txt không mô phỏng được gợi ý chính tả.")
+    _write(vdir / "words.txt", "".join(f"{w}\t{'' if rank[w] is None else rank[w]}\n" for w in fts_order).encode("utf-8"))
     _write(vdir / "sources.json", dumps(sources))
     _write(vdir / "LICENSES.md", lic.encode("utf-8"))
     con.close()
@@ -626,7 +635,10 @@ def main():
         "relations": {v: k for k, v in REL.items()},
         "counts": {"en_headwords": n_en, "entries": n_entries, "entries_ai": n_entries_ai, "vi_words": n_vi,
                    "forms": len(form_items), "prefix_files": len(groups), "sources": len(sources)},
+        "words_order": "fts_rowid",
         "files": len(files), "bytes": total,
+        # cho lệnh db_status của bản web (= db.rs Dict::meta và Dict::counts())
+        "meta": meta, "db_counts": db_counts,
     }
     _write(STAGE / "manifest.json", dumps(manifest))
     if len(files) > MAX_FILES:

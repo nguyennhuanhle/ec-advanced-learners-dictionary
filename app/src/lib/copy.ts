@@ -1,6 +1,7 @@
 // UC-U36: sao chép mục từ / một nghĩa thành văn bản có định dạng (HTML) + bản chữ thường, để dán vào Word.
 import type { Block, EnEntry, LearnerSense, WiktSense } from "./types";
 import { t } from "./i18n.svelte";
+import { writeHtmlNative } from "./platform";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -65,13 +66,9 @@ export function senseClip(e: EnEntry, b: Block, s: LearnerSense | WiktSense, n: 
 }
 
 export async function writeClipboard(html: string, text: string): Promise<void> {
-  // App thật: plugin clipboard của Tauri (giữ định dạng HTML khi dán vào Word).
-  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-    const { writeHtml } = await import("@tauri-apps/plugin-clipboard-manager");
-    await writeHtml(html, text);
-    return;
-  }
-  // Trình duyệt thường (chế độ dev): thử Clipboard API, không được thì chọn vùng HTML ẩn rồi copy.
+  // App thật: plugin clipboard của Tauri (giữ định dạng HTML khi dán vào Word) — xem platform.ts.
+  if (await writeHtmlNative(html, text)) return;
+  // Trình duyệt (bản web, chế độ dev): thử Clipboard API, không được thì chọn vùng HTML ẩn rồi copy.
   try {
     await navigator.clipboard.write([
       new ClipboardItem({

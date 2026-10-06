@@ -2,13 +2,13 @@
   // Màn hình chính: ô tìm + gợi ý, 3 chế độ, mục từ, lịch sử, danh sách từ, cài đặt, nguồn & giấy phép.
   // Lịch sử, danh sách, cài đặt nằm trong user.sqlite (Rust). Chữ giao diện qua t() (English mặc định / Tiếng Việt).
   import { onMount, tick } from "svelte";
-  import { save as saveDialog } from "@tauri-apps/plugin-dialog";
   import Entry from "$lib/Entry.svelte";
   import ViEntryView from "$lib/ViEntry.svelte";
   import Icon from "$lib/Icon.svelte";
   import About from "$lib/About.svelte";
   import * as api from "$lib/api";
-  import { cleanQuery, describeVia, inTauri } from "$lib/api";
+  import { cleanQuery, describeVia } from "$lib/api";
+  import { pickSavePath } from "$lib/platform";
   import { writeClipboard } from "$lib/copy";
   import { speak, type Accent } from "$lib/speech";
   import { APP_NAME, dateLocale, t, tErr, ui, type UiLang } from "$lib/i18n.svelte";
@@ -58,10 +58,12 @@
   let editing = $state<"" | "new" | "rename">("");
   let editName = $state("");
   let banner = $state("");
+  let bannerReload = $state(false); // bản web: dải thông báo có nút "Tải lại" (UC-W10)
   let toast = $state("");
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
   let sugTimer: ReturnType<typeof setTimeout> | undefined;
   let sugSeq = 0;
+  let goSeq = 0; // lần tra mới nhất: kết quả về muộn của lần tra cũ không ghi đè (bản web tải dữ liệu qua mạng)
   let mainEl: HTMLElement | undefined = $state();
   let inputEl: HTMLInputElement | undefined = $state();
 
@@ -69,6 +71,11 @@
   const activeName = $derived(listInfos.find((l) => l.id === activeList)?.name ?? "");
 
   onMount(async () => {
+    // bản web: Worker báo site đã đổi bản dữ liệu (UC-W10). Bản desktop không bao giờ phát sự kiện này.
+    window.addEventListener("ecald-notice", (e) => {
+      banner = tErr((e as CustomEvent<{ message: string }>).detail.message);
+      bannerReload = true;
+    });
     try {
       status = await api.dbStatus();
     } catch (e) {
@@ -235,9 +242,7 @@
     if (!l) return;
     if (!l.count) return say(t("listEmptyExport"));
     const suggested = await api.defaultExportPath(l.name);
-    const path = inTauri
-      ? await saveDialog({ defaultPath: suggested, filters: [{ name: "CSV (Excel, Anki, Quizlet)", extensions: ["csv"] }] })
-      : suggested;
+    const path = await pickSavePath(suggested);
     if (!path) return;
     try {
       const n = await api.exportCsv(l.id, path);
@@ -274,7 +279,12 @@
       return;
     }
     sugTimer = setTimeout(async () => {
-      const r = await api.suggest(q, mode);
+      let r: Suggestion[];
+      try {
+        r = await api.suggest(q, mode);
+      } catch {
+        return; // bản web mất mạng: giữ gợi ý đang có, lỗi sẽ báo khi bấm tra
+      }
       if (seq === sugSeq) suggestions = r; // bỏ kết quả cũ về muộn
     }, 60);
   }
@@ -292,7 +302,19 @@
     sugOpen = false;
     sugIndex = -1;
     const key = raw.startsWith("vi:") ? `vi:${q}` : q;
-    const view: LookupView = await api.lookup(key, mode);
+    const seq = ++goSeq;
+    let view: LookupView;
+    let entry: EnEntry | ViEntry | null = null;
+    try {
+      view = await api.lookup(key, mode);
+      if (view.kind === "en") entry = await api.getEntry(view.word);
+      else if (view.kind === "vi") entry = await api.getViEntry(view.word);
+    } catch (e) {
+      // bản web: lỗi mạng / dữ liệu mới — giữ nguyên màn hình đang xem, không báo "không tìm thấy"
+      if (seq === goSeq) say(tErr(e), 8000);
+      return;
+    }
+    if (seq !== goSeq) return; // đã có lần tra mới hơn
     if (view.kind === "empty") return;
     if (push && current && current !== key) {
       back = [...back, current];
@@ -300,20 +322,18 @@
     }
     current = key;
     if (view.kind === "en") {
-      const entry = await api.getEntry(view.word);
       if (!entry) {
         screen = { kind: "none", query: q, suggestions: [] };
         return;
       }
-      screen = { kind: "entry", entry, via: view.via, alsoVi: view.also_vi };
+      screen = { kind: "entry", entry: entry as EnEntry, via: view.via, alsoVi: view.also_vi };
       remember(view.word, view.word, "en");
     } else if (view.kind === "vi") {
-      const entry = await api.getViEntry(view.word);
       if (!entry) {
         screen = { kind: "none", query: q, suggestions: [] };
         return;
       }
-      screen = { kind: "vi", entry, alsoEn: view.also_en };
+      screen = { kind: "vi", entry: entry as ViEntry, alsoEn: view.also_en };
       remember(`vi:${view.word}`, view.word, "vi");
     } else if (view.kind === "choice") {
       screen = { kind: "choice", query: view.query, words: view.words, lang: view.lang };
@@ -545,7 +565,11 @@
   <main class="main" bind:this={mainEl} ondblclick={onDbl}>
     <div class="content">
       {#if banner}
-        <div class="notice warn">{banner} <button class="k" onclick={() => (banner = "")}>{t("close")}</button></div>
+        <div class="notice warn">
+          {banner}
+          {#if bannerReload}<button class="k" onclick={() => location.reload()}>{t("reload")}</button>{/if}
+          <button class="k" onclick={() => (banner = "")}>{t("close")}</button>
+        </div>
       {/if}
       {#if !status}
         <p class="muted">{t("opening")}</p>

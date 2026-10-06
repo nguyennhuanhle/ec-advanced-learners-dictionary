@@ -4,8 +4,23 @@
     {
       "name": "tu-dien-ui",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "app", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "app",
+        "run",
+        "dev"
+      ],
       "port": 1420
+    },
+    {
+      "name": "tu-dien-web",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "app/web-preview.py",
+        "--port",
+        "4173"
+      ],
+      "port": 4173
     }
   ]
 }

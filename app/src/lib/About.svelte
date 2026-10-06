@@ -4,8 +4,7 @@
   import { APP_NAME, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { inTauri } from "./api";
-  import { openUrl } from "@tauri-apps/plugin-opener";
+  import { openExternalUrl } from "./platform";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
 
@@ -360,8 +359,7 @@
   // Liên kết ngoài: mở bằng trình duyệt mặc định (app không tự kết nối mạng, không điều hướng cửa sổ app).
   function openExternal(e: MouseEvent, url: string) {
     e.preventDefault();
-    if (inTauri) openUrl(url).catch(() => {});
-    else window.open(url, "_blank", "noopener");
+    openExternalUrl(url).catch(() => {});
   }
   const jump = (i: number) => sectionEls[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
 </script>

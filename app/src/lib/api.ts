@@ -1,5 +1,7 @@
-// Gọi lõi Rust qua một lệnh duy nhất `call(cmd, args)` (src-tauri/src/lib.rs).
+// Gọi lõi qua một lệnh duy nhất `call(cmd, args)`: bản desktop → Rust (src-tauri/src/lib.rs);
+// bản web (VITE_TARGET === "web", chọn lúc build) → Web Worker (web/worker.ts, cùng tên lệnh, cùng hình dạng kết quả).
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
+import { inTauri } from "./platform";
 import type {
   DbStatus,
   EnEntry,
@@ -15,10 +17,15 @@ import type {
 } from "./types";
 import { t } from "./i18n.svelte";
 
-// Trong cửa sổ Tauri: gọi Rust trực tiếp. Chỉ khi chạy dev trong trình duyệt thường thì đi qua app/dev-bridge.py.
-export const inTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+export { inTauri };
 
 async function call<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
+  if (import.meta.env.VITE_TARGET === "web") {
+    // nhập động: bản desktop không mang theo Worker và bộ giải từ web
+    const { webCall } = await import("./web/client");
+    return webCall<T>(cmd, args);
+  }
+  // Trong cửa sổ Tauri: gọi Rust trực tiếp. Chỉ khi chạy dev trong trình duyệt thường thì đi qua app/dev-bridge.py.
   if (inTauri || !import.meta.env.DEV) return tauriInvoke<T>("call", { cmd, args });
   const r = await fetch("http://127.0.0.1:1430/call", {
     method: "POST",
