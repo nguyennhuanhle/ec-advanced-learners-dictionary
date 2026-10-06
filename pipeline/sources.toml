@@ -1,0 +1,73 @@
+# Allowlist nguồn dữ liệu. Pipeline chỉ dùng nguồn có ở đây và có trường license.
+# Không thêm: Oxford 3000/5000, English Vocabulary Profile, nội dung Oxford/Cambridge/Longman/Collins/Merriam-Webster.
+
+[sources.kaikki_en]
+name = "Wiktionary tiếng Anh, mục từ tiếng Anh (Wiktextract, kaikki.org)"
+url = "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz"
+file = "kaikki-en.jsonl.gz"
+license = "CC BY-SA 4.0; GFDL"
+attribution = "Wiktionary contributors; Tatu Ylonen, Wiktextract (LREC 2022)"
+
+[sources.kaikki_vi]
+name = "Wiktionary tiếng Anh, mục từ tiếng Việt (Wiktextract, kaikki.org)"
+url = "https://kaikki.org/dictionary/Vietnamese/kaikki.org-dictionary-Vietnamese.jsonl"
+file = "kaikki-vi.jsonl"
+license = "CC BY-SA 4.0; GFDL"
+attribution = "Wiktionary contributors; Tatu Ylonen, Wiktextract (LREC 2022)"
+
+[sources.viwikt]
+name = "Wiktionary tiếng Việt, toàn bộ (Wiktextract, kaikki.org)"
+url = "https://kaikki.org/viwiktionary/raw-wiktextract-data.jsonl.gz"
+file = "viwikt-raw.jsonl.gz"
+license = "CC BY-SA 4.0; GFDL"
+attribution = "Những người đóng góp Wiktionary tiếng Việt; Wiktextract"
+
+[sources.oewn]
+name = "Open English WordNet 2025"
+url = "https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025-json.zip"
+file = "oewn-2025-json.zip"
+license = "CC BY 4.0 (trên nền giấy phép Princeton WordNet)"
+attribution = "McCrae et al., Open English WordNet"
+
+[sources.cefrj]
+name = "CEFR-J Vocabulary Profile 1.5"
+url = "https://raw.githubusercontent.com/openlanguageprofiles/olp-en-cefrj/master/cefrj-vocabulary-profile-1.5.csv"
+file = "cefrj-vocabulary-profile-1.5.csv"
+license = "Miễn phí cho nghiên cứu và thương mại, bắt buộc trích dẫn"
+attribution = "CEFR-J Vocabulary Profile 1.5. Tono Laboratory, Tokyo University of Foreign Studies"
+
+[sources.octanove]
+name = "Octanove Vocabulary Profile C1/C2 1.0"
+url = "https://raw.githubusercontent.com/openlanguageprofiles/olp-en-cefrj/master/octanove-vocabulary-profile-c1c2-1.0.csv"
+file = "octanove-vocabulary-profile-c1c2-1.0.csv"
+license = "CC BY-SA 4.0"
+attribution = "Octanove Labs"
+
+[sources.tatoeba_eng]
+name = "Tatoeba, câu tiếng Anh"
+url = "https://downloads.tatoeba.org/exports/per_language/eng/eng_sentences.tsv.bz2"
+file = "tatoeba-eng.tsv.bz2"
+license = "CC BY 2.0 FR"
+attribution = "Tatoeba.org contributors"
+
+[sources.tatoeba_vie]
+name = "Tatoeba, câu tiếng Việt"
+url = "https://downloads.tatoeba.org/exports/per_language/vie/vie_sentences.tsv.bz2"
+file = "tatoeba-vie.tsv.bz2"
+license = "CC BY 2.0 FR"
+attribution = "Tatoeba.org contributors"
+
+[sources.tatoeba_links]
+name = "Tatoeba, liên kết câu Việt-Anh"
+url = "https://downloads.tatoeba.org/exports/per_language/vie/vie-eng_links.tsv.bz2"
+file = "tatoeba-vie-eng-links.tsv.bz2"
+license = "CC BY 2.0 FR"
+attribution = "Tatoeba.org contributors"
+
+[sources.ecdict]
+name = "ECDICT (chỉ dùng thứ hạng tần suất BNC/COCA và phiên âm dự phòng)"
+url = "https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv"
+file = "ecdict.csv"
+license = "MIT"
+attribution = "skywind3000, ECDICT"
+forbidden_columns = ["oxford", "collins", "translation"]

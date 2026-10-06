@@ -1,0 +1,19 @@
+# Khoá API: KHÔNG BAO GIỜ commit
+*.env
+khoa-api.env
+
+# Dữ liệu tải về và dữ liệu trung gian (tái tạo được bằng pipeline)
+data/
+
+# Môi trường Python
+.venv/
+__pycache__/
+*.pyc
+
+# File soạn để xem
+_deliverables/
+
+# Tauri / Node
+node_modules/
+target/
+dist/

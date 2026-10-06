@@ -1,0 +1,59 @@
+﻿EC ADVANCED LEARNERS' DICTIONARY (internal use / bản dùng nội bộ)
+English–English · English–Vietnamese · Vietnamese–English
+
+Ứng dụng chạy hoàn toàn offline, không gửi dữ liệu ra Internet.
+
+TÁC GIẢ / AUTHOR
+Lê Nguyễn Như Anh (Le Nguyen Nhu Anh), Edtech Corner (founder) — ý tưởng, định hướng biên soạn, thiết kế.
+Liên hệ / Contact: https://edtechcorner.com/contact
+
+GIẤY PHÉP ỨNG DỤNG (MIỄN PHÍ) / APP LICENCE (FREE)
+© 2026 Lê Nguyễn Như Anh, Edtech Corner. Ứng dụng được cung cấp miễn phí.
+- Được cài đặt và sử dụng miễn phí để tự học, giảng dạy và dùng trong tổ chức.
+- Được chia sẻ miễn phí bản cài đặt nguyên vẹn cho người khác.
+- Không được bán hay thu phí, gỡ phần ghi công/thông báo bản quyền, hay phát hành bản sửa đổi khi chưa có sự đồng ý của tác giả.
+- Cung cấp "nguyên trạng", không kèm bảo đảm; tác giả không chịu trách nhiệm về thiệt hại phát sinh khi sử dụng hay do sai sót nội dung.
+- Tên và logo thuộc về Edtech Corner.
+Free of charge: you may install, use and share the unmodified installer free of charge; you may not sell it,
+remove credits or distribute modified versions without permission. Provided "as is", without warranty.
+Giấy phép ứng dụng không hạn chế quyền của bạn theo giấy phép dữ liệu dưới đây.
+
+DỮ LIỆU TỪ ĐIỂN
+Gói dữ liệu phát hành theo giấy phép Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0),
+vì phần lớn dữ liệu nguồn dùng giấy phép này: https://creativecommons.org/licenses/by-sa/4.0/
+Không chứa nội dung của Oxford, Cambridge, Longman, Collins, Merriam-Webster hay English Vocabulary Profile.
+Nội dung gắn nhãn AI do Gemini biên soạn lại từ Wiktionary.
+
+NGUỒN VÀ GHI CÔNG
+- Wiktionary tiếng Anh, mục từ tiếng Anh (Wiktextract, kaikki.org)
+  Giấy phép: CC BY-SA 4.0; GFDL
+  Ghi công: Wiktionary contributors; Tatu Ylonen, Wiktextract (LREC 2022)
+- Wiktionary tiếng Anh, mục từ tiếng Việt (Wiktextract, kaikki.org)
+  Giấy phép: CC BY-SA 4.0; GFDL
+  Ghi công: Wiktionary contributors; Tatu Ylonen, Wiktextract (LREC 2022)
+- Wiktionary tiếng Việt, toàn bộ (Wiktextract, kaikki.org)
+  Giấy phép: CC BY-SA 4.0; GFDL
+  Ghi công: Những người đóng góp Wiktionary tiếng Việt; Wiktextract
+- Open English WordNet 2025
+  Giấy phép: CC BY 4.0 (trên nền giấy phép Princeton WordNet)
+  Ghi công: McCrae et al., Open English WordNet
+- CEFR-J Vocabulary Profile 1.5
+  Giấy phép: Miễn phí cho nghiên cứu và thương mại, bắt buộc trích dẫn
+  Ghi công: CEFR-J Vocabulary Profile 1.5. Tono Laboratory, Tokyo University of Foreign Studies
+- Octanove Vocabulary Profile C1/C2 1.0
+  Giấy phép: CC BY-SA 4.0
+  Ghi công: Octanove Labs
+- Tatoeba, câu tiếng Anh
+  Giấy phép: CC BY 2.0 FR
+  Ghi công: Tatoeba.org contributors
+- Tatoeba, câu tiếng Việt
+  Giấy phép: CC BY 2.0 FR
+  Ghi công: Tatoeba.org contributors
+- Tatoeba, liên kết câu Việt-Anh
+  Giấy phép: CC BY 2.0 FR
+  Ghi công: Tatoeba.org contributors
+- ECDICT (chỉ dùng thứ hạng tần suất BNC/COCA và phiên âm dự phòng)
+  Giấy phép: MIT
+  Ghi công: skywind3000, ECDICT
+
+Bấm "Tôi đồng ý" để tiếp tục cài đặt.

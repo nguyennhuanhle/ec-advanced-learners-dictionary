@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "EC Advanced Learners’ Dictionary",
+  "mainBinaryName": "ec-dictionary",
+  "version": "0.1.0",
+  "identifier": "vn.edtechcorner.tudien",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "EC Advanced Learners' Dictionary",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 720,
+        "minHeight": 520,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "edtechcorner",
+    "copyright": "© 2026 Le Nguyen Nhu Anh, Edtech Corner. App: free licence. Data: CC BY-SA 4.0",
+    "category": "Education",
+    "shortDescription": "English–English, English–Vietnamese and Vietnamese–English learner's dictionary, works offline",
+    "longDescription": "An offline learner's dictionary: UK/US pronunciation, CEFR levels, signposted senses, examples, phrasal verbs, idioms, synonyms, Vietnamese meanings and Vietnamese–English lookup. Open data (Wiktionary, Open English WordNet, CEFR-J, Tatoeba).",
+    "licenseFile": "LICENSE.txt",
+    "resources": {
+      "../../data/build/dict-core.sqlite": "dict-core.sqlite"
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller",
+        "silent": true
+      },
+      "nsis": {
+        "template": "windows/installer.nsi",
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "Vietnamese"
+        ],
+        "displayLanguageSelector": true,
+        "installerIcon": "icons/icon.ico",
+        "compression": "lzma",
+        "startMenuFolder": "EC Advanced Learners’ Dictionary"
+      }
+    }
+  }
+}

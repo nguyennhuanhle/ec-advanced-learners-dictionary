@@ -1,0 +1,82 @@
+{
+  "kaikki_en": {
+    "url": "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",
+    "file": "kaikki-en.jsonl.gz",
+    "bytes": 523331798,
+    "sha256": "6d40e0067718aeb3321db30297761ca803838390627111a29a5426fee4557faf",
+    "retrieved_at": "2026-10-06T11:10:10",
+    "license": "CC BY-SA 4.0; GFDL"
+  },
+  "kaikki_vi": {
+    "url": "https://kaikki.org/dictionary/Vietnamese/kaikki.org-dictionary-Vietnamese.jsonl",
+    "file": "kaikki-vi.jsonl",
+    "bytes": 82772100,
+    "sha256": "ba64fae8301bf3f383a82bb178f2370309d31b3bcb3a92e9b0c9e04aeb6ecc16",
+    "retrieved_at": "2026-10-06T11:10:25",
+    "license": "CC BY-SA 4.0; GFDL"
+  },
+  "viwikt": {
+    "url": "https://kaikki.org/viwiktionary/raw-wiktextract-data.jsonl.gz",
+    "file": "viwikt-raw.jsonl.gz",
+    "bytes": 33773177,
+    "sha256": "106d8bd9d1161eef6c9097be4eb8c8c41c3cfd4c8747cf5f78aa541e0759895e",
+    "retrieved_at": "2026-10-06T11:10:32",
+    "license": "CC BY-SA 4.0; GFDL"
+  },
+  "oewn": {
+    "url": "https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025-json.zip",
+    "file": "oewn-2025-json.zip",
+    "bytes": 9986555,
+    "sha256": "7d749f6e2c39e6970e4997839dcf6e42fd281f3c2fae0171d2192bae8cfa4b51",
+    "retrieved_at": "2026-10-06T11:10:34",
+    "license": "CC BY 4.0 (trên nền giấy phép Princeton WordNet)"
+  },
+  "cefrj": {
+    "url": "https://raw.githubusercontent.com/openlanguageprofiles/olp-en-cefrj/master/cefrj-vocabulary-profile-1.5.csv",
+    "file": "cefrj-vocabulary-profile-1.5.csv",
+    "bytes": 233214,
+    "sha256": "b0dd3c635f1c9a4fdf1490c7e5b7c48e8bbe55b652ad0c9860a95f98e10ae498",
+    "retrieved_at": "2026-10-06T11:10:35",
+    "license": "Miễn phí cho nghiên cứu và thương mại, bắt buộc trích dẫn"
+  },
+  "octanove": {
+    "url": "https://raw.githubusercontent.com/openlanguageprofiles/olp-en-cefrj/master/octanove-vocabulary-profile-c1c2-1.0.csv",
+    "file": "octanove-vocabulary-profile-c1c2-1.0.csv",
+    "bytes": 46462,
+    "sha256": "18c33a407f2f89f7b8de9671c6d45fe3ea0bce45e7d2d7dcaab48d73e0f7b380",
+    "retrieved_at": "2026-10-06T11:10:35",
+    "license": "CC BY-SA 4.0"
+  },
+  "tatoeba_eng": {
+    "url": "https://downloads.tatoeba.org/exports/per_language/eng/eng_sentences.tsv.bz2",
+    "file": "tatoeba-eng.tsv.bz2",
+    "bytes": 24894467,
+    "sha256": "5f7ebf552bd3925dfd33236ccb6a210c5ba02b365e4a39964fb658e1209e87d9",
+    "retrieved_at": "2026-10-06T11:10:44",
+    "license": "CC BY 2.0 FR"
+  },
+  "tatoeba_vie": {
+    "url": "https://downloads.tatoeba.org/exports/per_language/vie/vie_sentences.tsv.bz2",
+    "file": "tatoeba-vie.tsv.bz2",
+    "bytes": 421861,
+    "sha256": "25aa17ad8c5a694250fa928fc691344ee5b379d952336e8fa8f17508fe573494",
+    "retrieved_at": "2026-10-06T11:10:46",
+    "license": "CC BY 2.0 FR"
+  },
+  "tatoeba_links": {
+    "url": "https://downloads.tatoeba.org/exports/per_language/vie/vie-eng_links.tsv.bz2",
+    "file": "tatoeba-vie-eng-links.tsv.bz2",
+    "bytes": 140424,
+    "sha256": "7a7f289434893f27f72b2aaaad0596c58409f7acdec3f4f2fc0165633de02958",
+    "retrieved_at": "2026-10-06T11:10:47",
+    "license": "CC BY 2.0 FR"
+  },
+  "ecdict": {
+    "url": "https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv",
+    "file": "ecdict.csv",
+    "bytes": 65933428,
+    "sha256": "1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf",
+    "retrieved_at": "2026-10-06T11:10:52",
+    "license": "MIT"
+  }
+}

@@ -1,0 +1,193 @@
+/* Token màu và chữ. App offline nên chỉ dùng font hệ thống.
+   Bảng "Cổ điển" lấy màu từ logo: xanh dương đậm → xanh da trời → xanh ngọc; xanh lá của tab logo cho nghĩa Việt. */
+:root {
+  --bg: #f3f7fd;
+  --surface: #ffffff;
+  --surface-2: #e9f1fb;
+  --ink: #0f1d3a;
+  --ink-2: #3b4d6c;
+  --ink-3: #72829d;
+  --line: #d8e3f2;
+  --brand: #0d3a8f;
+  --brand-bg: linear-gradient(100deg, #0b3db8 0%, #0a74d8 55%, #0bbfcf 100%);
+  --brand-ink: #f2f8ff;
+  --accent: #0a62c9;
+  --accent-soft: #e2eefc;
+  --gw: #07798c;
+  --gw-soft: #dcf4f6;
+  --vi: #188a4c;
+  --vi-soft: #e2f6ea;
+  --ai: #5a46c9;
+  --a: #1c9b58;
+  --b: #1565d0;
+  --c: #6a49c6;
+  --on-level: #ffffff;
+  --shadow: 0 1px 2px rgba(10, 40, 90, 0.06), 0 4px 16px rgba(10, 60, 140, 0.06);
+  --serif: "Cambria", "Times New Roman", "Georgia", serif; /* Cambria có đủ chữ tiếng Việt; Georgia thiếu (vd. ế) */
+  --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Mono", "Consolas", monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1322;
+    --surface: #111c30;
+    --surface-2: #18263e;
+    --ink: #e6eefb;
+    --ink-2: #b1c0d8;
+    --ink-3: #7f90ab;
+    --line: #23344f;
+    --brand: #0a2a6b;
+    --brand-bg: linear-gradient(100deg, #0a2a6b 0%, #0b4a8f 55%, #0a7584 100%);
+    --brand-ink: #eaf3ff;
+    --accent: #62b0ff;
+    --accent-soft: #12304f;
+    --gw: #5fd6e4;
+    --gw-soft: #0e3540;
+    --vi: #6fdc9d;
+    --vi-soft: #123526;
+    --ai: #b2a7ff;
+    --a: #5fe0a0;
+    --b: #80b7ff;
+    --c: #c1a9ff;
+    --on-level: #0b1322;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1322;
+  --surface: #111c30;
+  --surface-2: #18263e;
+  --ink: #e6eefb;
+  --ink-2: #b1c0d8;
+  --ink-3: #7f90ab;
+  --line: #23344f;
+  --brand: #0a2a6b;
+  --brand-bg: linear-gradient(100deg, #0a2a6b 0%, #0b4a8f 55%, #0a7584 100%);
+  --brand-ink: #eaf3ff;
+  --accent: #62b0ff;
+  --accent-soft: #12304f;
+  --gw: #5fd6e4;
+  --gw-soft: #0e3540;
+  --vi: #6fdc9d;
+  --vi-soft: #123526;
+  --ai: #b2a7ff;
+  --a: #5fe0a0;
+  --b: #80b7ff;
+  --c: #c1a9ff;
+  --on-level: #0b1322;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--base-size, 16px);
+  line-height: 1.55;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--accent);
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Bảng màu hồng tím (data-palette="rose"), có bản sáng và tối, chuyển bằng nút trên thanh trên cùng. */
+:root[data-palette="rose"] {
+  --bg: #fbf4f9;
+  --surface: #ffffff;
+  --surface-2: #f6eaf3;
+  --ink: #2b1f33;
+  --ink-2: #5c4a68;
+  --ink-3: #8f7c9b;
+  --line: #eddcea;
+  --brand: #6e2a7f;
+  --brand-bg: linear-gradient(100deg, #c2337f 0%, #8a3aa8 55%, #5b3fc0 100%);
+  --brand-ink: #fff4fb;
+  --accent: #7b45c9;
+  --accent-soft: #efe7fc;
+  --gw: #b52c74;
+  --gw-soft: #fde4f0;
+  --vi: #a62e6b;
+  --vi-soft: #fbe6f0;
+  --ai: #5d3ab0;
+  --a: #d24b8c;
+  --b: #9654c4;
+  --c: #5b3aa8;
+  --on-level: #ffffff;
+  --shadow: 0 1px 2px rgba(80, 20, 70, 0.06), 0 6px 18px rgba(120, 40, 120, 0.07);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="rose"]:not([data-theme="light"]) {
+    --bg: #1a1220;
+    --surface: #241a2c;
+    --surface-2: #2e2238;
+    --ink: #f4eaf6;
+    --ink-2: #c9b7d1;
+    --ink-3: #9b88a6;
+    --line: #3b2d47;
+    --brand: #2c1838;
+    --brand-bg: linear-gradient(100deg, #5a1a44 0%, #43205c 55%, #2c2463 100%);
+    --brand-ink: #f8e9f4;
+    --accent: #cfa3f5;
+    --accent-soft: #352646;
+    --gw: #ff9fca;
+    --gw-soft: #43203a;
+    --vi: #ffa2c9;
+    --vi-soft: #3c1f31;
+    --ai: #c8aff7;
+    --a: #f28fbf;
+    --b: #c99cf2;
+    --c: #a993f7;
+    --on-level: #1a1220;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+
+:root[data-palette="rose"][data-theme="dark"] {
+  --bg: #1a1220;
+  --surface: #241a2c;
+  --surface-2: #2e2238;
+  --ink: #f4eaf6;
+  --ink-2: #c9b7d1;
+  --ink-3: #9b88a6;
+  --line: #3b2d47;
+  --brand: #2c1838;
+  --brand-bg: linear-gradient(100deg, #5a1a44 0%, #43205c 55%, #2c2463 100%);
+  --brand-ink: #f8e9f4;
+  --accent: #cfa3f5;
+  --accent-soft: #352646;
+  --gw: #ff9fca;
+  --gw-soft: #43203a;
+  --vi: #ffa2c9;
+  --vi-soft: #3c1f31;
+  --ai: #c8aff7;
+  --a: #f28fbf;
+  --b: #c99cf2;
+  --c: #a993f7;
+  --on-level: #1a1220;
+  --shadow: none;
+  color-scheme: dark;
+}
