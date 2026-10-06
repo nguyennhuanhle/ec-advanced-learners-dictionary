@@ -24,9 +24,11 @@ Octanove Vocabulary Profile, Tatoeba, ECDICT (frequency ranks and fallback IPA o
 
 ## Licence
 
+See [`LICENSE`](LICENSE). In short:
+
 - **App** — © 2026 Le Nguyen Nhu Anh, Edtech Corner. Free of charge: you may install, use and share the unmodified installer free of charge;
   you may not sell it, remove its credits or distribute modified versions without permission. Provided "as is", without warranty.
-  Full text: [`app/src-tauri/LICENSE.txt`](app/src-tauri/LICENSE.txt). The name and logo belong to Edtech Corner.
+  The name and logo belong to Edtech Corner. (The installer shows the same terms from `app/src-tauri/LICENSE.txt`.)
 - **Dictionary data** — Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0), because most source data uses that licence;
   Tatoeba sentences CC BY 2.0 FR, Open English WordNet CC BY 4.0, ECDICT MIT. The app licence does not limit your rights under these data licences.
 
