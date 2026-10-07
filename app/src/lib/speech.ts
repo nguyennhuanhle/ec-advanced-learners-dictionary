@@ -1,14 +1,14 @@
 // Phát âm bằng giọng máy (Web Speech API: WebView2 đọc giọng Windows ở bản desktop, trình duyệt/thiết bị ở bản web).
 // Quy tắc chung: thiếu giọng UK thì dùng giọng Mỹ và báo rõ.
-// Bản web (UC-W11): mặc định chỉ dùng giọng CHẠY TRÊN MÁY (localService); giọng trực tuyến của trình duyệt gửi chữ cần đọc
-// tới máy chủ của hãng nên chỉ dùng khi người dùng tự bật trong Cài đặt (setOnlineVoices).
+// Bản web (UC-W11): giọng CHẠY TRÊN MÁY (localService) xếp trước; giọng trực tuyến của trình duyệt (gửi chữ cần đọc tới máy chủ
+// của hãng) mặc định bật, người dùng tắt được trong Cài đặt (setOnlineVoices) — tắt rồi thì chỉ dùng giọng trên máy.
 
 import { t } from "./i18n.svelte";
 import { IS_WEB, devicePlatform } from "./platform";
 
 export type Accent = "uk" | "us" | "vi";
 
-let allowOnline = false;
+let allowOnline = IS_WEB;
 export function setOnlineVoices(on: boolean) {
   allowOnline = on;
 }

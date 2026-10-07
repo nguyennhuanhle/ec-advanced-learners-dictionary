@@ -32,8 +32,8 @@
     <rect x="9" y="9" width="11" height="11" rx="2" />
     <path d="M5 15V5a2 2 0 0 1 2-2h8" />
   {:else if name === "gear"}
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+    <!-- Cài đặt: thanh trượt (bánh răng cũ dễ nhầm với icon mặt trời của nút sáng/tối) -->
+    <path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4" />
   {:else if name === "download"}
     <path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />
   {:else if name === "plus"}

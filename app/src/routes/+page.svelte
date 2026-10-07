@@ -59,7 +59,9 @@
   let editing = $state<"" | "new" | "rename">("");
   let editName = $state("");
   let banner = $state("");
-  let onlineVoices = $state(false); // bản web: cho dùng giọng đọc trực tuyến của trình duyệt (UC-W11)
+  let onlineVoices = $state(IS_WEB); // bản web: cho dùng giọng đọc trực tuyến của trình duyệt (UC-W11), mặc định bật
+  // chỉ tắt khi người dùng đã tự tắt ("0"); chưa từng chọn → bật
+  const onlineFrom = (v: string | undefined) => v !== "0";
   let copyManual = $state(""); // bản web: trình duyệt chặn clipboard → hiện chữ để người dùng tự chép
   let restoreInput: HTMLInputElement | undefined = $state();
   let toastAction = $state<{ label: string; run: () => void } | null>(null); // bản web: nút "Thử lại" trong thông báo lỗi mạng
@@ -101,7 +103,7 @@
       accent = (st.accent as Accent) ?? "us";
       if (st.closed !== undefined) closed = new Set(st.closed.split(",").filter(Boolean));
       activeList = Number(st.active_list ?? 0);
-      onlineVoices = st.online_voices === "1";
+      onlineVoices = onlineFrom(st.online_voices);
       setOnlineVoices(onlineVoices);
       await refreshLists();
       await refreshHistory();
@@ -374,7 +376,7 @@
     try {
       const r = await api.userRestore(await f.text());
       const st = await api.settings();
-      onlineVoices = st.online_voices === "1";
+      onlineVoices = onlineFrom(st.online_voices);
       setOnlineVoices(onlineVoices);
       await refreshLists();
       await refreshHistory();
