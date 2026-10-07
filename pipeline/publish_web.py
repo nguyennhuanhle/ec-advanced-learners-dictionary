@@ -9,7 +9,7 @@ Bố cục repo site (thư mục publish của Netlify = gốc repo, không có 
   index.html, _app/, favicon.png, logo-*.png    ← app/build-web/
   data/manifest.json                            ← data/build/web/manifest.json
   data/v/v<phiên bản>-<sha8>/                   ← bản dữ liệu hiện hành + giữ MỘT bản liền trước (tab đang mở không lỗi, UC-W10)
-  _headers, netlify.toml, robots.txt, .gitattributes, README.md, LICENSE
+  _headers, netlify.toml, robots.txt, sitemap.xml (UC-WM04), .gitattributes, README.md, LICENSE; giữ google<mã>.html nếu có
 
 Quy tắc (use case người bảo trì web):
   - repo site có thay đổi chưa commit → dừng, không ghi đè;
@@ -19,6 +19,7 @@ Không tự push: --commit chỉ tạo commit; người chạy tự `git push` (
 """
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -32,7 +33,7 @@ LICENSE = ROOT / "LICENSE"
 SOURCE_REPO = "https://github.com/nguyennhuanhle/ec-advanced-learners-dictionary"
 
 ALLOWED_EXT = {".html", ".js", ".css", ".json", ".txt", ".md", ".png", ".webp", ".ico", ".svg", ".woff2"}
-ALLOWED_NAMES = {"_headers", "LICENSE", ".gitattributes", "robots.txt", "README.md", "netlify.toml"}
+ALLOWED_NAMES = {"_headers", "LICENSE", ".gitattributes", "robots.txt", "sitemap.xml", "README.md", "netlify.toml"}
 MAX_FILES = 10_000
 MAX_FILE_BYTES = 5 * 1024 * 1024
 
@@ -55,10 +56,44 @@ HEADERS = """/*
   Cache-Control: public, max-age=31536000, immutable
 """
 
-ROBOTS = """User-agent: *
+SITE_URL = "https://dictionary.edtechcorner.com/"
+
+# UC-WM04 (Google Search Console). Googlebot dựng trang bằng JS: trang chủ cần đọc data/manifest.json, nếu chặn thì
+# Google chỉ thấy màn lỗi "Không tải được từ điển" → chỉ chặn kho dữ liệu theo phiên bản /data/v/ (chỉ đọc khi tra từ).
+ROBOTS = f"""User-agent: *
 Allow: /
-Disallow: /data/
+Disallow: /data/v/
+
+Sitemap: {SITE_URL}sitemap.xml
 """
+
+# chỉ trang chủ: không làm trang riêng từng từ (UC-W13 bỏ), địa chỉ #/en/<từ> không bao giờ vào sitemap
+SITEMAP = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>{url}</loc>
+    <lastmod>{lastmod}</lastmod>
+  </url>
+</urlset>
+"""
+
+# <head> tĩnh của SPA lấy từ app.html (dùng chung với desktop) → thẻ dành riêng cho site chèn vào index.html lúc publish.
+# Thẻ meta/link không bị CSP (chế độ hash) ràng buộc. Không dùng tên Oxford/Cambridge/… (CANNOT web).
+DESCRIPTION = (
+    "Free English–English, English–Vietnamese and Vietnamese–English learner's dictionary: IPA, CEFR levels, "
+    "examples, collocations and learner notes. Từ điển Anh–Anh, Anh–Việt, Việt–Anh miễn phí cho người học."
+)
+HEAD_EXTRA = f"""
+    <meta name="description" content="{DESCRIPTION}" />
+    <link rel="canonical" href="{SITE_URL}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{SITE_URL}" />
+    <meta property="og:title" content="EC Advanced Learners' Dictionary" />
+    <meta property="og:description" content="{DESCRIPTION}" />
+    <meta property="og:image" content="{SITE_URL}logo-classic.png" />"""
+
+# file xác minh quyền sở hữu của Google Search Console (nếu chọn cách xác minh bằng file HTML): giữ lại qua các lần publish
+GOOGLE_VERIFY = re.compile(r"^google[0-9a-f]+\.html$")
 
 # site tĩnh dựng sẵn: Netlify publish thẳng gốc repo, không chạy lệnh build nào (khỏi đoán nhầm framework)
 NETLIFY_TOML = """[build]
@@ -123,7 +158,7 @@ def main():
 
     # dọn mọi thứ do script quản lý (trừ .git và các bản dữ liệu giữ lại), rồi chép mới
     for p in site.iterdir():
-        if p.name == ".git":
+        if p.name == ".git" or GOOGLE_VERIFY.match(p.name):
             continue
         if p.name == "data":
             for q in p.iterdir():
@@ -143,6 +178,14 @@ def main():
     shutil.copy2(DATA / "manifest.json", site / "data" / "manifest.json")
     (site / "_headers").write_text(HEADERS, encoding="utf-8", newline="\n")
     (site / "robots.txt").write_text(ROBOTS, encoding="utf-8", newline="\n")
+    lastmod = (manifest.get("build_date") or manifest["data_version"].replace(".", "-"))[:10]
+    (site / "sitemap.xml").write_text(SITEMAP.format(url=SITE_URL, lastmod=lastmod), encoding="utf-8", newline="\n")
+    index = site / "index.html"
+    with open(index, encoding="utf-8", newline="") as f:  # giữ nguyên xuống dòng (script nội tuyến có mã băm CSP)
+        html = f.read()
+    if html.count("</title>") != 1 or 'rel="canonical"' in html:
+        stop("index.html không có đúng một </title> (hoặc đã có canonical) — không chèn được thẻ cho Google")
+    index.write_text(html.replace("</title>", "</title>" + HEAD_EXTRA, 1), encoding="utf-8", newline="")
     (site / ".gitattributes").write_text(GITATTRIBUTES, encoding="utf-8", newline="\n")
     (site / "netlify.toml").write_text(NETLIFY_TOML, encoding="utf-8", newline="\n")
     (site / "README.md").write_text(README, encoding="utf-8", newline="\n")
