@@ -1720,7 +1720,8 @@
     touch-action: manipulation;
   }
 
-  @media (max-width: 860px) {
+  /* màn hình hẹp, hoặc điện thoại xoay ngang (thấp): lịch sử / danh sách thành ngăn kéo */
+  @media (max-width: 860px), (orientation: landscape) and (max-height: 500px) {
     .app {
       grid-template-columns: 1fr;
       height: 100dvh;
@@ -1812,7 +1813,7 @@
       min-width: 38px;
     }
     .content {
-      padding: 14px 14px 72px;
+      padding: 14px calc(14px + env(safe-area-inset-right)) calc(72px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
     }
     .sugs button {
       padding: 10px 10px;
@@ -1826,6 +1827,38 @@
     }
     .settings .ctl {
       flex-wrap: wrap;
+    }
+  }
+
+  /* điện thoại xoay ngang (cao ≤ 500 px): thanh trên cùng gom về MỘT hàng để chừa chỗ cho mục từ
+     (máy ảo Android 864×360: ba hàng chiếm 160 px, còn ~180 px cho nội dung) */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .topbar {
+      flex-wrap: nowrap;
+      gap: 6px;
+      padding-top: calc(4px + env(safe-area-inset-top));
+      padding-bottom: 4px;
+    }
+    .brand {
+      flex: 0 0 auto;
+    }
+    .search {
+      order: 0;
+      flex: 1 1 auto;
+      flex-basis: auto;
+      min-width: 0;
+    }
+    .search input {
+      height: 36px;
+    }
+    .modes {
+      order: 0;
+      flex: 0 0 auto;
+      flex-basis: auto;
+    }
+    .modes button {
+      flex: 0 0 auto;
+      padding: 6px 8px;
     }
   }
 </style>
