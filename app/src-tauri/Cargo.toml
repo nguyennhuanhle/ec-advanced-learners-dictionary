@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.1.0"
+version = "0.1.1"
 description = "Từ điển Anh-Anh, Anh-Việt, Việt-Anh offline"
 authors = ["Le Nguyen Nhu Anh (Edtech Corner)"]
 edition = "2021"
