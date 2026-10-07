@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EC Eng-Vie Dictionary</string>
+    <string name="title_activity_main">EC Eng-Vie Dictionary</string>
+    <string name="package_name">com.edtechcorner.dictionary</string>
+    <string name="custom_url_scheme">com.edtechcorner.dictionary</string>
+</resources>

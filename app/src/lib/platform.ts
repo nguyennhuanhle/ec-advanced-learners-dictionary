@@ -2,8 +2,11 @@
 // (vite.config.js đặt "web" khi `npm run build:web`, "desktop" khi build thường).
 // Plugin Tauri chỉ được nhập động trong nhánh desktop, nên bản web không mang code @tauri-apps/plugin-*.
 
-/** Bản build này là bản web (dictionary.edtechcorner.com)? */
+/** Bản build này chạy bằng code web (Worker + IndexedDB): bản web (dictionary.edtechcorner.com) VÀ app Android (Capacitor). */
 export const IS_WEB = import.meta.env.VITE_TARGET === "web";
+
+/** App Android (Capacitor, PLAN-android). Luôn kèm IS_WEB; dùng cho phần khác bản web (không GA, giọng đọc gốc, nút Back…). */
+export const IS_ANDROID = import.meta.env.VITE_ANDROID === true;
 
 /** Đang chạy trong cửa sổ Tauri (desktop). Bản web luôn false. */
 export const inTauri =

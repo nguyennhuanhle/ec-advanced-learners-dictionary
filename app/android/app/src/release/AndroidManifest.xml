@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bản release: gỡ quyền INTERNET (kể cả quyền do thư viện Capacitor khai) — app chạy hoàn toàn offline (PLAN-android mục 10).
+     Liên kết ra ngoài mở bằng trình duyệt của máy (app khác), không cần quyền này. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+</manifest>
