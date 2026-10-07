@@ -80,18 +80,36 @@ def find_sdk():
     return p if p.is_dir() else None
 
 
+# Gradle 8.14.3 (Capacitor 8) chạy trên Java 21–24; Java 25 (JDK đi kèm Android Studio mới) báo
+# "Unsupported class file major version 69" (đã gặp 2026-10-07).
+JDK_MIN, JDK_MAX = 21, 24
+
+
+def jdk_version(home):
+    rel = home / "release"
+    if not ((home / "bin" / "java.exe").is_file() or (home / "bin" / "java").is_file()) or not rel.is_file():
+        return None
+    m = re.search(r'JAVA_VERSION="(\d+)', rel.read_text(encoding="utf-8", errors="replace"))
+    return int(m.group(1)) if m else None
+
+
 def find_jdk():
-    """JDK 21 cho Gradle: JAVA_HOME nếu là 21+, không thì JDK đi kèm Android Studio (jbr)."""
+    """JDK cho Gradle: JAVA_HOME, JDK Android Studio tải về (~/.jdks), JDK đi kèm Android Studio (jbr), Temurin trong Program Files."""
     cands = []
     if os.environ.get("JAVA_HOME"):
         cands.append(Path(os.environ["JAVA_HOME"]))
+    cands += sorted((Path.home() / ".jdks").glob("*"), reverse=True)
     cands += [Path(r"C:\Program Files\Android\Android Studio\jbr"), Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Android Studio" / "jbr"]
+    cands += sorted(Path(r"C:\Program Files\Eclipse Adoptium").glob("jdk-*"), reverse=True)
+    seen = []
     for c in cands:
-        rel = c / "release"
-        if (c / "bin" / "java.exe").is_file() or (c / "bin" / "java").is_file():
-            m = re.search(r'JAVA_VERSION="(\d+)', rel.read_text(encoding="utf-8", errors="replace")) if rel.is_file() else None
-            if m and int(m.group(1)) >= 21:
+        v = jdk_version(c)
+        if v is not None:
+            seen.append(f"{c} (Java {v})")
+            if JDK_MIN <= v <= JDK_MAX:
                 return c
+    if seen:
+        print("  JDK tìm thấy nhưng không hợp (cần Java 21–24): " + "; ".join(seen))
     return None
 
 
@@ -151,7 +169,7 @@ def main():
     if not sdk:
         stop("không thấy Android SDK (ANDROID_HOME hoặc %LOCALAPPDATA%\\Android\\Sdk) — cài Android Studio trước")
     if not jdk:
-        stop("không thấy JDK 21+ (JAVA_HOME hoặc JDK đi kèm Android Studio)")
+        stop("không thấy JDK 21–24 — trong Android Studio: Settings › Build Tools › Gradle › Gradle JDK › Download JDK… (bản 21)")
     local = ANDROID / "local.properties"  # đã .gitignore
     if not local.is_file():
         local.write_text(f"sdk.dir={sdk.as_posix()}\n", encoding="utf-8")
