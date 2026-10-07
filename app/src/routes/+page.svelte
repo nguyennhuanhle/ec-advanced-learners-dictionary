@@ -8,10 +8,10 @@
   import About from "$lib/About.svelte";
   import * as api from "$lib/api";
   import { cleanQuery, describeVia } from "$lib/api";
-  import { DESKTOP_DOWNLOAD, IS_WEB, SITE_HOME, downloadText, persistStorage, pickSavePath } from "$lib/platform";
+  import { DESKTOP_DOWNLOAD, IS_ANDROID, IS_WEB, SITE_HOME, downloadText, loadAndroid, openExternalUrl, persistStorage, pickSavePath } from "$lib/platform";
   import { writeClipboard } from "$lib/copy";
   import { initAnalytics } from "$lib/analytics";
-  import { setOnlineVoices, speak, type Accent } from "$lib/speech";
+  import { setOnlineVoices, speak, speakAndroid, type Accent } from "$lib/speech";
   import { APP_NAME, dateLocale, t, tErr, ui, type UiLang } from "$lib/i18n.svelte";
   import type { DbStatus, EnEntry, HistoryRow, ListInfo, ListItem, LookupView, Mode, Source, Suggestion, Via, ViEntry } from "$lib/types";
 
@@ -66,6 +66,8 @@
   let restoreInput: HTMLInputElement | undefined = $state();
   let toastAction = $state<{ label: string; run: () => void } | null>(null); // bản web: nút "Thử lại" trong thông báo lỗi mạng
   let sugLoading = $state(false); // bản web: mạng chậm → chỉ báo "đang tải" sau 300 ms (UC-W "Khi lỗi")
+  /** màn hình cảm ứng (điện thoại, máy tính bảng, app Android): mẹo ở trang chủ nói "chạm" thay vì "nhấp đúp / Alt+←" */
+  const touch = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
   let sideOpen = $state(false); // màn hình hẹp: lịch sử / danh sách mở thành ngăn kéo
   let pick = $state(""); // bản web, màn hình cảm ứng: từ đang được chọn → nút "Tra" nổi (UC-W02)
   let navIdx = $state(0); // bản web: vị trí trong lịch sử trình duyệt (nút lùi/tiến, UC-W03)
@@ -130,7 +132,8 @@
 
   /** Bản web: tham số ?lang=&theme= (UC-W04), địa chỉ "#" (UC-W03), nút "Tra" khi chọn từ trên màn hình cảm ứng (UC-W02). */
   function webInit() {
-    initAnalytics(); // UC-W15: chỉ đếm lượt mở trang, không gửi phần "#…"
+    initAnalytics(); // UC-W15: chỉ đếm lượt mở trang, không gửi phần "#…" (không chạy trong app Android)
+    if (IS_ANDROID) androidInit();
     const p = new URLSearchParams(location.search);
     const lang = p.get("lang");
     const th = p.get("theme");
@@ -150,6 +153,46 @@
         const w = sel?.toString().trim() ?? "";
         pick = w && w.length <= 40 && /^[\p{L}'-]+$/u.test(w) && sel?.anchorNode && mainEl?.contains(sel.anchorNode) ? w : "";
       });
+    }
+  }
+
+  // ---------- app Android (PLAN-android A2) ----------
+  /** Nút Back/cử chỉ vuốt lùi (UC-A02): đóng hộp thoại/ngăn kéo trước, rồi lùi trong lịch sử của app.
+   *  Ở màn gốc thì handler TẮT để Android tự xử lý (thoát app, có hoạt ảnh predictive back) — PLAN-android mục 7. */
+  const canBack = $derived(!!copyManual || sideOpen || navIdx > 0);
+  function onAndroidBack() {
+    if (copyManual) copyManual = "";
+    else if (sideOpen) sideOpen = false;
+    else if (navIdx > 0) history.back();
+  }
+  $effect(() => {
+    if (!IS_ANDROID) return;
+    const on = canBack;
+    loadAndroid().then((a) => a.setBackEnabled(on));
+  });
+  $effect(() => {
+    if (!IS_ANDROID) return;
+    const dark = theme === "dark" || (theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+    loadAndroid().then((a) => a.setBarsStyle(dark));
+  });
+  async function androidInit() {
+    const a = await loadAndroid();
+    await a.initBack(onAndroidBack);
+    // liên kết ra ngoài (target=_blank, http/https khác nguồn của app) → trình duyệt của máy (UC-A07)
+    document.addEventListener("click", (e) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!el || !/^https?:/i.test(el.href) || new URL(el.href).origin === location.origin) return;
+      e.preventDefault();
+      openExternalUrl(el.href);
+    });
+  }
+  /** UC-A06: chia sẻ link bản web của mục đang xem (người nhận không cần cài app). */
+  async function shareCurrent(hash: string, label: string) {
+    try {
+      const a = await loadAndroid();
+      if (!(await a.shareLink(`https://dictionary.edtechcorner.com/${hash}`, label))) say(t("sharedNot"));
+    } catch (e) {
+      say(tErr(e), 8000);
     }
   }
 
@@ -341,6 +384,10 @@
       const r = await api.exportCsvText(id);
       const file = await api.defaultExportPath(name);
       const body = "\ufeff" + r.text + "\r\n";
+      if (IS_ANDROID) {
+        const ok = await (await loadAndroid()).shareFile(file, body, file);
+        return say(ok ? t("exportedAndroid", { n: r.rows, name: file }) : t("sharedNot"), 7000);
+      }
       if (downloadText(file, body, "text/csv;charset=utf-8")) return say(t("exportedWeb", { n: r.rows, name: file }), 7000);
       // trình duyệt trong app (Zalo, Facebook…) không tải được file → chép nội dung CSV vào clipboard
       try {
@@ -361,6 +408,11 @@
       const d = new Date(b.exported_at * 1000);
       const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
       const file = `ecdict-backup-${ymd}.json`;
+      if (IS_ANDROID) {
+        if (!(await (await loadAndroid()).shareFile(file, JSON.stringify(b, null, 1), file))) return say(t("sharedNot"));
+        if (banner === t("backupReminder", { n: listInfos.reduce((a, l) => a + l.count, 0) })) banner = "";
+        return say(t("backedUpAndroid", { name: file }), 8000);
+      }
       if (!downloadText(file, JSON.stringify(b, null, 1), "application/json")) return say(t("noDownloadBackup"), 8000);
       if (banner === t("backupReminder", { n: listInfos.reduce((a, l) => a + l.count, 0) })) banner = "";
       say(t("backedUp", { name: file }), 7000);
@@ -559,14 +611,34 @@
     }
   }
 
+  /** Từ nằm tại điểm (x, y) trên màn hình. Chạm hai lần trên điện thoại/app Android không chọn chữ như nhấp đúp chuột
+   *  (đã kiểm trên máy ảo Android 16: có dblclick nhưng getSelection() rỗng) → tự lấy từ quanh điểm chạm. */
+  function wordAt(x: number, y: number): string {
+    const r = document.caretRangeFromPoint?.(x, y);
+    if (!r || r.startContainer.nodeType !== Node.TEXT_NODE) return "";
+    const s = r.startContainer.textContent ?? "";
+    const isW = (c: string | undefined) => !!c && /[\p{L}'-]/u.test(c);
+    let a = r.startOffset;
+    let b = a;
+    while (a > 0 && isW(s[a - 1])) a--;
+    while (b < s.length && isW(s[b])) b++;
+    return s.slice(a, b).replace(/^['-]+|['-]+$/g, "");
+  }
+
   function onDbl(e: MouseEvent) {
-    // UC-U08: nhấp đúp vào một từ trong mục từ để tra
-    if ((e.target as HTMLElement).closest("input, button, select, textarea")) return;
-    const sel = window.getSelection()?.toString().trim() ?? "";
+    // UC-U08: nhấp đúp vào một từ trong mục từ để tra; UC-W02 / UC-A: chạm hai lần trên màn hình cảm ứng
+    if ((e.target as HTMLElement).closest("input, button, select, textarea, a")) return;
+    const sel = window.getSelection()?.toString().trim() || wordAt(e.clientX, e.clientY);
     if (sel && /^[\p{L}'-]+$/u.test(sel)) go(sel);
   }
 
-  function onSpeak(text: string, a: Accent) {
+  async function onSpeak(text: string, a: Accent) {
+    if (IS_ANDROID) {
+      // UC-A03: TextToSpeech của Android; thiếu giọng → nút mở cài đặt giọng nói
+      const r = await speakAndroid(text, a);
+      if (r.note) say(r.note, r.install ? 12000 : 4500, r.install ? { label: t("voiceInstall"), run: () => loadAndroid().then((m) => m.ttsOpenInstall()) } : null);
+      return;
+    }
     const note = speak(text, a);
     if (note) say(note);
   }
@@ -678,9 +750,11 @@
     </button>
     {#if IS_WEB}
       <!-- bản web (UC-W09): tải bản Windows dùng offline, về trang Edtech Corner — mở tab mới -->
-      <a class="icon-btn" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener" title={t("downloadDesktop")} aria-label={t("downloadDesktop")}>
-        <Icon name="download" /><span class="wide-label">{t("offlineShort")}</span>
-      </a>
+      {#if !IS_ANDROID}
+        <a class="icon-btn" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener" title={t("downloadDesktop")} aria-label={t("downloadDesktop")}>
+          <Icon name="download" /><span class="wide-label">{t("offlineShort")}</span>
+        </a>
+      {/if}
       <a class="icon-btn" href={SITE_HOME} target="_blank" rel="noopener" title={t("goSite")} aria-label={t("goSite")}>
         <Icon name="home" /><span class="wide-label">EdTech Corner</span>
       </a>
@@ -756,6 +830,12 @@
       {/if}
       {#if !status}
         <p class="muted">{t("opening")}</p>
+      {:else if !status.ok && IS_ANDROID}
+        <section class="recover">
+          <h1>{t("androidDataBadTitle")}</h1>
+          <p>{tErr(status.error)}</p>
+          <p>{t("androidDataBadHelp")}</p>
+        </section>
       {:else if !status.ok && IS_WEB}
         <section class="recover">
           <h1>{t("webDownTitle")}</h1>
@@ -794,8 +874,8 @@
               <button class="k" onclick={() => go("by the way")}>by the way</button></li>
             <li>{t("tipVi")} <button class="k" onclick={() => go("vi:ngân hàng")}>ngân hàng</button>,
               <button class="k" onclick={() => go("vi:hoc sinh")}>hoc sinh</button>, <button class="k" onclick={() => go("vi:nha")}>nha</button></li>
-            <li>{t("tipSave")}</li>
-            <li>{t("tipDbl")}</li>
+            <li>{t(touch ? "tipSaveTouch" : "tipSave")}</li>
+            <li>{t(touch ? "tipDblTouch" : "tipDbl")}</li>
           </ul>
           <div class="home-words">
             {#each ["the", "get", "make", "take", "have", "go", "time", "people"] as w}
@@ -803,7 +883,7 @@
             {/each}
           </div>
           {#if IS_WEB}
-            <p class="desktop-dl"><a href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener">{t("downloadDesktop")}</a></p>
+            {#if !IS_ANDROID}<p class="desktop-dl"><a href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener">{t("downloadDesktop")}</a></p>{/if}
           {/if}
         </section>
       {:else if screen.kind === "entry"}
@@ -812,6 +892,7 @@
           {@const v = screen.alsoVi}
           <div class="notice">{t("alsoInViEn")} <button class="k" onclick={() => go(`vi:${v}`)}>{v}</button></div>
         {/if}
+        {@const enWord = screen.entry.word}
         {#key screen.entry.word}
           <Entry
             entry={screen.entry}
@@ -824,6 +905,7 @@
             onToggleSave={toggleSave}
             onToggleVi={toggleVi}
             {onCopy}
+            onShare={IS_ANDROID ? () => shareCurrent(`#/en/${enc(enWord)}`, enWord) : undefined}
           />
         {/key}
       {:else if screen.kind === "vi"}
@@ -832,8 +914,14 @@
           {@const w = screen.alsoEn}
           <div class="notice">{t("alsoInEnEn")} <button class="k" onclick={() => go(w)}>{w}</button></div>
         {/if}
+        {@const viWord = screen.entry.word}
         {#key screen.entry.word}
-          <ViEntryView entry={screen.entry} onLookup={(w) => go(w)} {onSpeak} />
+          <ViEntryView
+            entry={screen.entry}
+            onLookup={(w) => go(w)}
+            {onSpeak}
+            onShare={IS_ANDROID ? () => shareCurrent(`#/vi/${enc(viWord)}`, viWord) : undefined}
+          />
         {/key}
       {:else if screen.kind === "choice"}
         {@const lang = screen.lang}
@@ -897,7 +985,7 @@
               <button class="test" onclick={() => onSpeak("The weather is lovely today.", accent)}>{t("tryVoice")}</button>
             </div>
           </div>
-          {#if IS_WEB}
+          {#if IS_WEB && !IS_ANDROID}
             <div class="row top">
               <div class="lab">{t("setOnlineVoices")}</div>
               <div class="ctl paths">
@@ -921,7 +1009,7 @@
                 <div>{t("dataUser")} {status.user_path === "indexeddb" ? t("webStore_indexeddb") : t("webStore_memory")}</div>
                 <div class="muted">{t("dataNoteWeb")}</div>
                 <div class="data-btns">
-                  <button onclick={backupData}>{t("backupBtn")}</button>
+                  <button onclick={backupData}>{t(IS_ANDROID ? "backupBtnAndroid" : "backupBtn")}</button>
                   <button onclick={() => restoreInput?.click()}>{t("restoreBtn")}</button>
                   <input bind:this={restoreInput} type="file" accept=".json,application/json" hidden onchange={restoreData} />
                   <button class="danger" onclick={clearAllData}>{t("clearAllBtn")}</button>
@@ -1010,7 +1098,7 @@
     display: grid;
     place-items: center;
     z-index: 50;
-    padding: 16px;
+    padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
   }
   .modal {
     background: var(--surface);
@@ -1050,7 +1138,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 10px 16px;
+    padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
     background: var(--brand-bg, var(--brand));
     color: var(--brand-ink);
   }
@@ -1207,6 +1295,8 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
   }
   .tabs {
     display: flex;
@@ -1269,7 +1359,7 @@
   }
   .content {
     max-width: 1040px;
-    padding: 22px 28px 40px;
+    padding: 22px calc(28px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(28px + env(safe-area-inset-left));
     margin: 0 auto;
   }
   .notice {
@@ -1540,7 +1630,7 @@
   }
   .toast {
     position: fixed;
-    bottom: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     background: var(--ink);
@@ -1653,6 +1743,8 @@
       bottom: 0;
       width: min(300px, 86vw);
       z-index: 41;
+      /* ngăn kéo phủ cả thanh trạng thái khi tràn viền */
+      padding-top: env(safe-area-inset-top);
       transform: translateX(-102%);
       transition: transform 0.18s ease-out;
       box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
@@ -1689,7 +1781,7 @@
     .topbar {
       flex-wrap: wrap;
       gap: 8px;
-      padding: 8px 10px;
+      padding: calc(8px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 8px calc(10px + env(safe-area-inset-left));
     }
     .nav,
     .icon-btn.palette {

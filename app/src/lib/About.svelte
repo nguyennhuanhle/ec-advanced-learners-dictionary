@@ -4,7 +4,7 @@
   import { APP_NAME, t, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { DESKTOP_DOWNLOAD, IS_WEB, SITE_HOME, openExternalUrl } from "./platform";
+  import { DESKTOP_DOWNLOAD, IS_ANDROID, IS_WEB, SITE_HOME, openExternalUrl } from "./platform";
   import Icon from "./Icon.svelte";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
@@ -192,6 +192,26 @@
         "Read-aloud uses the voices on your device first. Online voices are on by default: when one is used, the text being read is sent to the browser maker's server (for example Google for Chrome, Microsoft for Edge). To use only the voices on your device, turn off Settings › Online voices.",
       ],
       desktopLead: "Want to use the dictionary without internet?",
+      // app Android (UC-A07)
+      introAndroid:
+        "An offline learner's dictionary for Vietnamese learners and teachers of English. The page layout follows modern advanced learner's dictionaries, but all of the content comes from open data or was newly written for this dictionary and labelled AI.",
+      ipaAndroid: [
+        "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has none, the transcription from ECDICT is shown.",
+        "Audio uses the text-to-speech voices installed on your phone (for example Speech Services by Google); there are no recordings yet.",
+      ],
+      androidPrivacyTitle: "Privacy (Android app)",
+      androidPrivacy: [
+        "The whole dictionary is inside the app: looking up words needs no internet connection, and the app does not have permission to use the internet.",
+        "No account, no advertising, no analytics. The app does not collect or share any data.",
+        "Your history, word lists and settings are stored only inside the app on this phone. The app does not use Android's automatic backup, so uninstalling the app deletes them — use Settings › Backup to keep a copy.",
+        "Read-aloud uses the text-to-speech engine of your phone; that engine (for example Speech Services by Google) follows its own privacy terms.",
+        "Links to websites (edtechcorner.com, data sources, licences) open in your phone's browser.",
+      ],
+      swAndroid: [
+        "Capacitor and its plugins (MIT)",
+        "Svelte and SvelteKit (MIT)",
+        "Android System WebView (Google, Android terms)",
+      ],
     },
     vi: {
       tagline: "Anh–Anh · Anh–Việt · Việt–Anh",
@@ -367,6 +387,25 @@
         "Đọc to ưu tiên giọng đọc trên thiết bị. Giọng đọc trực tuyến mặc định bật: khi được dùng, chữ cần đọc sẽ gửi tới máy chủ của hãng trình duyệt (ví dụ Google với Chrome, Microsoft với Edge). Muốn chỉ dùng giọng trên thiết bị, tắt Cài đặt › Giọng đọc trực tuyến.",
       ],
       desktopLead: "Muốn dùng từ điển khi không có mạng?",
+      introAndroid:
+        "Từ điển offline cho người Việt học và dạy tiếng Anh. Bố cục mục từ theo kiểu từ điển người học nâng cao hiện đại. Toàn bộ nội dung lấy từ dữ liệu mở, hoặc được viết mới cho từ điển này và gắn nhãn AI.",
+      ipaAndroid: [
+        "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có thì dùng phiên âm của ECDICT.",
+        "Âm thanh dùng giọng đọc máy cài trên điện thoại (ví dụ Speech Services by Google); chưa có bản ghi âm người thật.",
+      ],
+      androidPrivacyTitle: "Quyền riêng tư (app Android)",
+      androidPrivacy: [
+        "Toàn bộ từ điển nằm sẵn trong app: tra từ không cần mạng, và app không có quyền dùng Internet.",
+        "Không tài khoản, không quảng cáo, không thống kê. App không thu thập và không chia sẻ dữ liệu nào.",
+        "Lịch sử, danh sách từ và cài đặt chỉ lưu trong app trên điện thoại này. App không dùng sao lưu tự động của Android, nên gỡ app là mất — hãy dùng Cài đặt › Sao lưu để giữ một bản.",
+        "Đọc to dùng bộ đọc văn bản của điện thoại; bộ đọc đó (ví dụ Speech Services by Google) theo điều khoản quyền riêng tư của nó.",
+        "Liên kết tới trang web (edtechcorner.com, nguồn dữ liệu, giấy phép) mở bằng trình duyệt của điện thoại.",
+      ],
+      swAndroid: [
+        "Capacitor và các plugin (MIT)",
+        "Svelte và SvelteKit (MIT)",
+        "Android System WebView (Google, điều khoản Android)",
+      ],
     },
   };
 
@@ -410,11 +449,11 @@
   </header>
   {#if IS_WEB}
     <div class="hero-links">
-      <a class="btn primary" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {t("downloadDesktop")}</a>
+      {#if !IS_ANDROID}<a class="btn primary" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {t("downloadDesktop")}</a>{/if}
       <a class="btn" href={SITE_HOME} target="_blank" rel="noopener"><Icon name="home" size={16} /> {t("goSite")}</a>
     </div>
   {/if}
-  <p class="intro">{IS_WEB ? c.introWeb : c.intro}</p>
+  <p class="intro">{IS_ANDROID ? c.introAndroid : IS_WEB ? c.introWeb : c.intro}</p>
 
   <nav class="toc">
     {#each c.nav as label, i}<button onclick={() => jump(i)}>{label}</button>{/each}
@@ -447,7 +486,7 @@
     {#each c.cards as card (card.id)}
       <article class="card how" class:wide={card.id === "ai"}>
         <h3>{card.title}{#if card.id === "ai"} <Badge kind="ai" text="AI" />{/if}</h3>
-        {#each IS_WEB && card.id === "ipa" ? c.ipaWeb : card.body as p}<p>{p}</p>{/each}
+        {#each IS_WEB && card.id === "ipa" ? (IS_ANDROID ? c.ipaAndroid : c.ipaWeb) : card.body as p}<p>{p}</p>{/each}
         <div class="from"><span>{c.from}:</span> {card.from}</div>
       </article>
     {/each}
@@ -483,9 +522,15 @@
   </div>
   <div class="card lic">
     <h3>{c.swTitle}</h3>
-    <ul>{#each c.sw as x}<li>{x}</li>{/each}</ul>
+    <ul>{#each IS_ANDROID ? c.swAndroid : c.sw as x}<li>{x}</li>{/each}</ul>
   </div>
-  {#if IS_WEB}
+  {#if IS_ANDROID}
+    <div class="card lic">
+      <h3>{c.androidPrivacyTitle}</h3>
+      <ul>{#each c.androidPrivacy as x}<li>{x}</li>{/each}</ul>
+      <p class="dl"><a href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener">{t("downloadDesktop")}</a></p>
+    </div>
+  {:else if IS_WEB}
     <div class="card lic">
       <h3>{c.webPrivacyTitle}</h3>
       <ul>{#each c.webPrivacy as x}<li>{x}</li>{/each}</ul>

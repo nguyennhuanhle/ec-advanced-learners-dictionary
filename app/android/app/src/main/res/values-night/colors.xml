@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- chế độ tối: màu đầu trang tối (app.css, data-theme=dark) -->
+    <color name="ecald_window">#0A2A6B</color>
+    <color name="ecald_splash">#0A2A6B</color>
+</resources>

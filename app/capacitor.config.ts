@@ -14,6 +14,12 @@ const config: CapacitorConfig = {
   },
   // webContentsDebuggingEnabled để mặc định: Capacitor chỉ bật gỡ lỗi WebView ở bản debug (kiểm bằng DevTools qua adb, UC-AM02)
   plugins: {
+    SystemBars: {
+      // "css": WebView ≥ 140 + viewport-fit=cover → tràn viền, CSS đệm bằng env(safe-area-inset-*);
+      // WebView cũ hơn → Capacitor đệm WebView từ phía Android (vùng thanh hệ thống lấy màu windowBackground của theme)
+      insetsHandling: "css",
+      initialViewportFitValueHint: "cover",
+    },
     App: {
       // nút Back do giao diện bật/tắt lúc chạy (PLAN-android mục 7): mặc định để hệ thống xử lý (predictive back)
       disableBackButtonHandler: true,

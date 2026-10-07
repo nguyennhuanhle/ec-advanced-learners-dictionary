@@ -156,8 +156,18 @@ def main():
 
     print("1/3 Dựng giao diện bản Android")
     run([NPM, "run", "build:android"], APP)
-    if "googletagmanager" in (UI / "index.html").read_text(encoding="utf-8"):
+    index = UI / "index.html"
+    with open(index, encoding="utf-8", newline="") as f:  # giữ nguyên xuống dòng (script nội tuyến có mã băm CSP)
+        html = f.read()
+    if "googletagmanager" in html:
         stop("bản Android có Google Analytics trong CSP/HTML — sai đích build")
+    # tràn viền (PLAN-android mục 8): WebView ≥ 140 chỉ vẽ dưới thanh hệ thống khi trang khai viewport-fit=cover;
+    # CSS dùng chung đã đệm bằng env(safe-area-inset-*). Chỉ bản Android — app.html dùng chung với web/desktop.
+    vp = 'content="width=device-width, initial-scale=1"'
+    if html.count(vp) != 1:
+        stop("index.html không có đúng một thẻ viewport như app.html")
+    with open(index, "w", encoding="utf-8", newline="") as f:
+        f.write(html.replace(vp, 'content="width=device-width, initial-scale=1, viewport-fit=cover"'))
     print("2/3 Chép dữ liệu + cap sync")
     copy_data()
     run([NPX, "cap", "sync", "android"], APP)

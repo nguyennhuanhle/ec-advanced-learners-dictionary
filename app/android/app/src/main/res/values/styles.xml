@@ -13,10 +13,15 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- WebView cũ (< 140): Capacitor đệm WebView, vùng thanh hệ thống hiện màu này — cùng màu đầu trang của app -->
+        <item name="android:windowBackground">@color/ecald_window</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <!-- Android 12+: màn hình khởi động của hệ thống = icon app trên màu đầu trang -->
+        <item name="windowSplashScreenBackground">@color/ecald_splash</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

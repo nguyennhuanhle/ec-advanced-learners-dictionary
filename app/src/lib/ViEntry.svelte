@@ -10,10 +10,13 @@
     entry,
     onLookup,
     onSpeak,
+    onShare,
   }: {
     entry: ViEntry;
     onLookup: (w: string) => void;
     onSpeak: (text: string, accent: Accent) => void;
+    /** app Android (UC-A06) */
+    onShare?: () => void;
   } = $props();
 
   const SRC: Record<string, () => string> = { ai: () => t("srcAi"), wiktionary: () => t("srcTable"), viwikt: () => t("srcViwikt") };
@@ -38,6 +41,9 @@
       <button class="speak" title={t("listenVi")} aria-label={t("listenVi")} onclick={() => onSpeak(entry.word, "vi")}>
         <Icon name="speaker" />
       </button>
+      {#if onShare}
+        <button class="speak" title={t("shareEntryTitle")} aria-label={t("shareEntry")} onclick={onShare}><Icon name="share" /></button>
+      {/if}
     </div>
   </header>
 

@@ -49,7 +49,10 @@ const probe = `async (hash) => {
     const ready = h && txt !== prev && !/Loading|Đang tải/.test(txt.slice(0, 200));
     if (ready || performance.now() - t0 > 15000) {
       await new Promise((r) => setTimeout(r, 150));
-      return { ms: Math.round(performance.now() - t0), head: (document.querySelector("main h1, main h2")?.textContent || "").trim(), text: main().innerText };
+      // so nội dung, không so nút (Lưu/Sao chép/Chia sẻ khác nhau giữa bản web và app, và đổi theo trạng thái đã lưu)
+      const c = main().cloneNode(true);
+      c.querySelectorAll("button, select").forEach((b) => b.remove());
+      return { ms: Math.round(performance.now() - t0), head: (document.querySelector("main h1, main h2")?.textContent || "").trim(), text: c.textContent.replace(/\\s+/g, " ").trim() };
     }
   }
 }`;

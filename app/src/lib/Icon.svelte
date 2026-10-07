@@ -44,6 +44,9 @@
     <path d="M4 20h4L19 9l-4-4L4 16v4z" />
   {:else if name === "home"}
     <path d="M3 11 12 4l9 7M5 10v10h5v-6h4v6h5V10" />
+  {:else if name === "share"}
+    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+    <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
   {:else if name === "x"}
     <path d="M18 6 6 18M6 6l12 12" />
   {/if}

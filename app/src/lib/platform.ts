@@ -22,8 +22,19 @@ export async function pickSavePath(suggested: string): Promise<string | null> {
   return suggested;
 }
 
-/** Mở liên kết ngoài: desktop mở bằng trình duyệt mặc định (cửa sổ app không tự điều hướng); web mở tab mới. */
+/** Phần gốc Android (lib/android.ts). Chỉ gọi khi IS_ANDROID; nhánh này bị loại khỏi bản web/desktop lúc build. */
+export function loadAndroid(): Promise<typeof import("./android")> {
+  if (import.meta.env.VITE_ANDROID) return import("./android");
+  return Promise.reject(new Error("not android"));
+}
+
+/** Mở liên kết ngoài: desktop mở bằng trình duyệt mặc định (cửa sổ app không tự điều hướng); web mở tab mới;
+ *  Android mở bằng trình duyệt của máy (app không có quyền INTERNET). */
 export async function openExternalUrl(url: string): Promise<void> {
+  if (import.meta.env.VITE_ANDROID) {
+    await (await import("./android")).openExternal(url);
+    return;
+  }
   if (import.meta.env.VITE_TARGET !== "web" && inTauri) {
     const { openUrl } = await import("@tauri-apps/plugin-opener");
     await openUrl(url);
@@ -32,8 +43,13 @@ export async function openExternalUrl(url: string): Promise<void> {
   window.open(url, "_blank", "noopener");
 }
 
-/** Ghi clipboard có định dạng bằng plugin của Tauri (giữ HTML khi dán vào Word). Trả false khi không phải desktop. */
+/** Ghi clipboard có định dạng bằng plugin của Tauri (giữ HTML khi dán vào Word). Trả false khi không phải desktop.
+ *  Android: clipboard của hệ thống (chữ thường — WebView không chắc cho Clipboard API). */
 export async function writeHtmlNative(html: string, text: string): Promise<boolean> {
+  if (import.meta.env.VITE_ANDROID) {
+    await (await import("./android")).copyText(text);
+    return true;
+  }
   if (import.meta.env.VITE_TARGET !== "web" && inTauri) {
     const { writeHtml } = await import("@tauri-apps/plugin-clipboard-manager");
     await writeHtml(html, text);

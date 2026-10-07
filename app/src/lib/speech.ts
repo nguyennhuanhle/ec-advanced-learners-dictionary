@@ -4,7 +4,7 @@
 // của hãng) mặc định bật, người dùng tắt được trong Cài đặt (setOnlineVoices) — tắt rồi thì chỉ dùng giọng trên máy.
 
 import { t } from "./i18n.svelte";
-import { IS_WEB, devicePlatform } from "./platform";
+import { IS_WEB, devicePlatform, loadAndroid } from "./platform";
 
 export type Accent = "uk" | "us" | "vi";
 
@@ -57,6 +57,22 @@ export function pickVoice(accent: Accent): { voice: SpeechSynthesisVoice | null;
   // bản desktop giữ nguyên câu cũ (luôn là Windows); bản web hướng dẫn theo nền tảng của thiết bị
   if (!IS_WEB) return { voice: null, note: t(accent === "vi" ? "voiceNoVi" : "voiceNoEn") };
   return { voice: null, note: t(accent === "vi" ? "voiceNoViWeb" : "voiceNoEnWeb", { help: voiceHelp() }) };
+}
+
+/** App Android (UC-A03): WebView không có speechSynthesis → TextToSpeech của Android.
+ *  Trả lời nhắn cần hiện (hoặc null) và có cần nút "mở cài đặt giọng nói" không. */
+export async function speakAndroid(text: string, accent: Accent): Promise<{ note: string | null; install: boolean }> {
+  const { ttsSpeak } = await loadAndroid();
+  const lang = accent === "uk" ? "en-GB" : accent === "us" ? "en-US" : "vi-VN";
+  try {
+    const r = await ttsSpeak(text, lang);
+    if (r === "ok") return { note: null, install: false };
+    if (r === "fallback-us") return { note: t("voiceUkFallbackAndroid"), install: true };
+    if (r === "no-engine") return { note: t("voiceNoEngineAndroid"), install: true };
+    return { note: t(accent === "vi" ? "voiceNoViAndroid" : "voiceNoEnAndroid"), install: true };
+  } catch (e) {
+    return { note: t("voiceErrorAndroid", { e: String((e as { message?: string })?.message ?? e) }), install: false };
+  }
 }
 
 export function speak(text: string, accent: Accent): string | null {

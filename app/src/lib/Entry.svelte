@@ -18,6 +18,7 @@
     onToggleSave,
     onToggleVi,
     onCopy,
+    onShare,
     accent = "us",
     closed = new Set<string>(),
   }: {
@@ -29,6 +30,8 @@
     onToggleSave: (key: string, label: string) => void;
     onToggleVi: () => void;
     onCopy: (clip: { html: string; text: string }, what: string) => void;
+    /** app Android (UC-A06): chia sẻ link bản web của mục từ; không truyền = không hiện nút */
+    onShare?: () => void;
     accent?: Accent;
     closed?: Set<string>;
   } = $props();
@@ -194,6 +197,9 @@
         <button class="copy-word" title={t("copyEntryTitle")} onclick={() => onCopy(entryClip(entry, showVi), entry.word)}>
           <Icon name="copy" /> {t("copy")}
         </button>
+        {#if onShare}
+          <button class="copy-word" title={t("shareEntryTitle")} onclick={onShare}><Icon name="share" /> {t("shareEntry")}</button>
+        {/if}
         <button class="vi-toggle" class:on={showVi} title={showVi ? t("viOnTitle") : t("viOffTitle")} onclick={onToggleVi}>
           VI
         </button>

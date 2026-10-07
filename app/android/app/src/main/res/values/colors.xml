@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- màu đầu trang (app.css: biến brand-bg, bảng màu Cổ điển) -->
+    <color name="ecald_window">#0B3DB8</color>
+    <color name="ecald_splash">#0B3DB8</color>
+</resources>
