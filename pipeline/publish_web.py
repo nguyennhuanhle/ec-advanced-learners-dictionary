@@ -10,6 +10,7 @@ Bố cục repo site (thư mục publish của Netlify = gốc repo, không có 
   data/manifest.json                            ← data/build/web/manifest.json
   data/v/v<phiên bản>-<sha8>/                   ← bản dữ liệu hiện hành + giữ MỘT bản liền trước (tab đang mở không lỗi, UC-W10)
   _headers, netlify.toml, robots.txt, sitemap.xml (UC-WM04), .gitattributes, README.md, LICENSE; giữ google<mã>.html nếu có
+  pipeline/site/*.html                          ← trang tĩnh viết tay (privacy-android.html, UC-AM05)
 
 Quy tắc (use case người bảo trì web):
   - repo site có thay đổi chưa commit → dừng, không ghi đè;
@@ -30,6 +31,8 @@ ROOT = Path(__file__).resolve().parent.parent
 UI = ROOT / "app" / "build-web"
 DATA = ROOT / "data" / "build" / "web"
 LICENSE = ROOT / "LICENSE"
+# trang tĩnh viết tay của site (vd. Chính sách quyền riêng tư app Android, UC-AM05) — chép nguyên vào gốc site
+SITE_PAGES = ROOT / "pipeline" / "site"
 SOURCE_REPO = "https://github.com/nguyennhuanhle/ec-advanced-learners-dictionary"
 
 ALLOWED_EXT = {".html", ".js", ".css", ".json", ".txt", ".md", ".png", ".webp", ".ico", ".svg", ".woff2"}
@@ -190,6 +193,10 @@ def main():
     (site / "netlify.toml").write_text(NETLIFY_TOML, encoding="utf-8", newline="\n")
     (site / "README.md").write_text(README, encoding="utf-8", newline="\n")
     shutil.copy2(LICENSE, site / "LICENSE")
+    for page in sorted(SITE_PAGES.glob("*.html")):
+        if (site / page.name).exists():
+            stop(f"{page.name} trùng tên file của bản build web")
+        shutil.copy2(page, site / page.name)
 
     # kiểm sau khi chép
     files = [p for p in site.rglob("*") if p.is_file() and ".git" not in p.relative_to(site).parts[:1]]
