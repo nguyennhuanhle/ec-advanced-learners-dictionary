@@ -23,3 +23,10 @@ STATUS.md
 use-cases.md
 PLAN.md
 PLAN-web.md
+PLAN-android.md
+
+# Android: khoá ký và dữ liệu chép lúc dựng — KHÔNG commit
+*.jks
+*.keystore
+keystore.properties
+app/android/app/src/main/assets/public/
