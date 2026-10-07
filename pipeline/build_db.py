@@ -23,6 +23,7 @@ from pathlib import Path
 from build_proto import cefr_table, clean_etym, oewn
 from enrich_sample import SKIP_TAGS, norm_pos, validate
 import vi_layer
+from ipa_ecdict import ecdict_to_ipa
 
 sys.stdout.reconfigure(encoding="utf-8")
 csv.field_size_limit(1 << 30)
@@ -56,7 +57,8 @@ def norm(s):
 
 
 def ipa_clean(s):
-    return s.replace("ɹ", "r") if s else s
+    # ɹ → r như từ điển người học; vài phiên âm Wiktionary gõ dấu nhấn/trường âm bằng ký tự ASCII ' và :
+    return s.replace("ɹ", "r").replace("'", "ˈ").replace(":", "ː") if s else s
 
 
 def load_ranks():
@@ -280,12 +282,16 @@ def main():
                     (eid, f"{w}|{pos}", w, norm(w), pos, e["ord"], e["entry_type"], r, band, lvl,
                      "CEFR-J/Octanove" if lvl else None, tier, e["etym"] or None, a["model"] if a else None))
         head_rank.setdefault(w, (r, tier))
-        uk = e["ipa_uk"] or e["ipa_any"] or (f"/{phon[w]}/" if w in phon else None)
-        us = e["ipa_us"] or e["ipa_any"] or (f"/{phon[w]}/" if w in phon else None)
-        src_ipa = "wiktionary" if (e["ipa_uk"] or e["ipa_us"] or e["ipa_any"]) else "ecdict"
-        for acc, ipa in (("uk", uk), ("us", us)):
+        # Wiktionary trước. ECDICT chỉ dự phòng cho UK: phiên âm ECDICT theo kiểu Anh (không gắn nhãn US), chuẩn hoá sang IPA
+        # bằng ipa_ecdict (chuỗi hỏng → không có phiên âm). Nguồn ghi theo TỪNG giọng (trước đây cả hai ghi "wiktionary"
+        # dù giọng thiếu lấy từ ECDICT — người dùng thấy "verbally /'v\\:bәli/", 2026-10-07).
+        wk_uk = e["ipa_uk"] or e["ipa_any"]
+        wk_us = e["ipa_us"] or e["ipa_any"]
+        ec_uk = None if wk_uk else ecdict_to_ipa(phon.get(w))
+        for acc, ipa, src_ipa in (("uk", wk_uk or ec_uk, "wiktionary" if wk_uk else "ecdict"), ("us", wk_us, "wiktionary")):
             if ipa:
                 con.execute("INSERT INTO pronunciation VALUES(?,?,?,?)", (eid, acc, ipa_clean(ipa), src_ipa))
+        uk, us = wk_uk or ec_uk, wk_us
         stats["ipa"] += bool(uk or us)
         main_forms = [f for f in e["forms"] if not f["conj"]] or [f for f in e["forms"] if f["conj"]]
         for i, fm in enumerate(main_forms[:6]):

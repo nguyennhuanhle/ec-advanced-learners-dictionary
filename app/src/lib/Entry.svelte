@@ -204,13 +204,11 @@
           VI
         </button>
       </div>
+      <!-- nút nghe UK/US luôn có (giọng máy đọc được mọi từ); phiên âm chỉ hiện khi có. Phiên âm dự phòng của ECDICT là kiểu Anh
+           nên chỉ gắn cho UK — mục chỉ có ECDICT thì dòng US không có phiên âm nhưng vẫn có nút nghe. -->
       <div class="ipa-row">
-        {#if entry.ipa.uk}
-          <span class="ipa"><span class="acc">UK</span> {ipa(entry.ipa.uk)} {@render speakBtn(entry.word, "uk", t("voiceUk"))}</span>
-        {/if}
-        {#if entry.ipa.us}
-          <span class="ipa"><span class="acc">US</span> {ipa(entry.ipa.us)} {@render speakBtn(entry.word, "us", t("voiceUs"))}</span>
-        {/if}
+        <span class="ipa"><span class="acc">UK</span> {#if entry.ipa.uk}{ipa(entry.ipa.uk)}{/if} {@render speakBtn(entry.word, "uk", t("voiceUk"))}</span>
+        <span class="ipa"><span class="acc">US</span> {#if entry.ipa.us}{ipa(entry.ipa.us)}{/if} {@render speakBtn(entry.word, "us", t("voiceUs"))}</span>
       </div>
     </header>
 

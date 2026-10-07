@@ -86,7 +86,7 @@
           id: "ipa",
           title: "Pronunciation",
           body: [
-            "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has none, the transcription from ECDICT is shown.",
+            "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has no UK transcription, the one from ECDICT is converted to IPA and shown as UK (ECDICT transcriptions are British-style, so they are never shown as US).",
             "Audio uses the Windows text-to-speech voices installed on your computer; there are no recordings yet. If no British voice is installed, the UK button uses an American voice.",
           ],
           from: "Wiktionary · ECDICT · Windows voices",
@@ -180,7 +180,7 @@
       introWeb:
         "A learner's dictionary for Vietnamese learners and teachers of English. The page layout follows modern advanced learner's dictionaries, but all of the content comes from open data or was newly written for this dictionary and labelled AI.",
       ipaWeb: [
-        "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has none, the transcription from ECDICT is shown.",
+        "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has no UK transcription, the one from ECDICT is converted to IPA and shown as UK (ECDICT transcriptions are British-style, so they are never shown as US).",
         "Audio uses the text-to-speech voices on your device; there are no recordings yet. If your device has no suitable voice, the browser's online voices are used; you can turn them off in Settings.",
       ],
       webPrivacyTitle: "Privacy (web version)",
@@ -196,7 +196,7 @@
       introAndroid:
         "An offline learner's dictionary for Vietnamese learners and teachers of English. The page layout follows modern advanced learner's dictionaries, but all of the content comes from open data or was newly written for this dictionary and labelled AI.",
       ipaAndroid: [
-        "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has none, the transcription from ECDICT is shown.",
+        "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has no UK transcription, the one from ECDICT is converted to IPA and shown as UK (ECDICT transcriptions are British-style, so they are never shown as US).",
         "Audio uses the text-to-speech voices installed on your phone (for example Speech Services by Google); there are no recordings yet.",
       ],
       androidPrivacyTitle: "Privacy (Android app)",
@@ -282,7 +282,7 @@
           id: "ipa",
           title: "Phát âm",
           body: [
-            "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có thì dùng phiên âm của ECDICT.",
+            "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có phiên âm UK thì dùng phiên âm của ECDICT, đổi sang ký hiệu IPA và chỉ ghi là UK (phiên âm ECDICT theo kiểu Anh nên không bao giờ ghi là US).",
             "Âm thanh dùng giọng đọc máy (TTS) cài sẵn trong Windows; chưa có bản ghi âm người thật. Nếu máy chưa cài giọng Anh-Anh, nút UK sẽ đọc bằng giọng Mỹ.",
           ],
           from: "Wiktionary · ECDICT · giọng đọc Windows",
@@ -375,7 +375,7 @@
       introWeb:
         "Từ điển cho người Việt học và dạy tiếng Anh. Bố cục mục từ theo kiểu từ điển người học nâng cao hiện đại. Toàn bộ nội dung lấy từ dữ liệu mở, hoặc được viết mới cho từ điển này và gắn nhãn AI.",
       ipaWeb: [
-        "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có thì dùng phiên âm của ECDICT.",
+        "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có phiên âm UK thì dùng phiên âm của ECDICT, đổi sang ký hiệu IPA và chỉ ghi là UK (phiên âm ECDICT theo kiểu Anh nên không bao giờ ghi là US).",
         "Âm thanh dùng giọng đọc máy có sẵn trên thiết bị của bạn; chưa có bản ghi âm người thật. Khi thiết bị không có giọng phù hợp, trang dùng giọng đọc trực tuyến của trình duyệt; bạn có thể tắt trong Cài đặt.",
       ],
       webPrivacyTitle: "Quyền riêng tư (bản web)",
@@ -390,7 +390,7 @@
       introAndroid:
         "Từ điển offline cho người Việt học và dạy tiếng Anh. Bố cục mục từ theo kiểu từ điển người học nâng cao hiện đại. Toàn bộ nội dung lấy từ dữ liệu mở, hoặc được viết mới cho từ điển này và gắn nhãn AI.",
       ipaAndroid: [
-        "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có thì dùng phiên âm của ECDICT.",
+        "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có phiên âm UK thì dùng phiên âm của ECDICT, đổi sang ký hiệu IPA và chỉ ghi là UK (phiên âm ECDICT theo kiểu Anh nên không bao giờ ghi là US).",
         "Âm thanh dùng giọng đọc máy cài trên điện thoại (ví dụ Speech Services by Google); chưa có bản ghi âm người thật.",
       ],
       androidPrivacyTitle: "Quyền riêng tư (app Android)",
