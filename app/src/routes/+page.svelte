@@ -1133,6 +1133,19 @@
     grid-template-rows: auto 1fr;
     height: 100vh;
   }
+  /* tràn viền (app Android, WebView ≥ 140): nền mờ sau thanh điều hướng 3 nút / thanh cử chỉ để nút dễ nhìn khi chữ cuộn
+     xuống dưới (thấy trên Galaxy S22 Ultra). env() = 0 trên web/desktop → dải này cao 0. */
+  .app::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: env(safe-area-inset-bottom);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    pointer-events: none;
+    z-index: 39;
+  }
   .topbar {
     grid-column: 1 / -1;
     display: flex;

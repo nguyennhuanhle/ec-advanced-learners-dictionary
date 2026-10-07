@@ -20,7 +20,9 @@ import java.util.TreeSet;
  * trả "có" cả khi dữ liệu giọng chưa tải (rồi đọc bằng giọng khác: bấm loa UK nghe giọng Mỹ, chữ Việt đọc bằng giọng Anh).
  * Ở đây đọc Voice.getFeatures(): giọng có KEY_FEATURE_NOT_INSTALLED là chưa tải.
  *
- * JS: VoiceCheck.installed() → { engine: boolean, langs: string[] }  (vd. ["en-US", "vi-VN"])
+ * JS: VoiceCheck.installed() → { engine, langs: string[] (vd. ["en-US", "vi-VN"]), voices: [{ name, lang, network }] }
+ *     (chỉ giọng đã cài). Phải chọn ĐÍCH DANH giọng: chỉ đặt ngôn ngữ en-GB thì Google TTS vẫn có thể đọc giọng Mỹ
+ *     (đã thấy trên Galaxy S22 Ultra: "en-GB-language" → en-us-x-iog; chọn "en-gb-x-gbb-local" → giọng Anh).
  *     VoiceCheck.openInstall() → mở màn hình tải giọng của engine mặc định (INSTALL_TTS_DATA); không được thì
  *     Cài đặt › Chuyển văn bản thành giọng nói. (openInstall của plugin TTS chỉ gọi CHECK_TTS_DATA — chạy ngầm, không có giao diện.)
  */
@@ -57,6 +59,7 @@ public class VoiceCheckPlugin extends Plugin {
     private void answer(PluginCall call) {
         JSObject ret = new JSObject();
         Set<String> langs = new TreeSet<>();
+        JSArray list = new JSArray();
         boolean engine = state == 1;
         if (engine) {
             try {
@@ -66,6 +69,11 @@ public class VoiceCheckPlugin extends Plugin {
                         Set<String> f = v.getFeatures();
                         if (f != null && f.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)) continue;
                         langs.add(v.getLocale().toLanguageTag());
+                        JSObject o = new JSObject();
+                        o.put("name", v.getName());
+                        o.put("lang", v.getLocale().toLanguageTag());
+                        o.put("network", v.isNetworkConnectionRequired());
+                        list.put(o);
                     }
                 }
             } catch (Exception e) {
@@ -74,6 +82,7 @@ public class VoiceCheckPlugin extends Plugin {
         }
         ret.put("engine", engine);
         ret.put("langs", JSArray.from(langs.toArray()));
+        ret.put("voices", list);
         call.resolve(ret);
     }
 

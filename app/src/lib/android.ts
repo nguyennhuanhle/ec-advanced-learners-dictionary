@@ -82,7 +82,30 @@ export type TtsResult = "ok" | "fallback-us" | "missing" | "no-engine";
 
 /** Plugin riêng của app (android/…/VoiceCheckPlugin.java): giọng nào đã CÀI thật. isLanguageSupported của plugin TTS trả
  *  "có" cả khi dữ liệu giọng chưa tải (Google TTS lặng lẽ đọc bằng giọng khác — đã thấy: bấm UK nghe giọng Mỹ). */
-const VoiceCheck = registerPlugin<{ installed(): Promise<{ engine: boolean; langs: string[] }>; openInstall(): Promise<void> }>("VoiceCheck");
+type InstalledVoice = { name: string; lang: string; network: boolean };
+const VoiceCheck = registerPlugin<{
+  installed(): Promise<{ engine: boolean; langs: string[]; voices: InstalledVoice[] }>;
+  openInstall(): Promise<void>;
+}>("VoiceCheck");
+
+/** Danh sách giọng theo thứ tự của plugin TTS (tham số `voice` của speak là chỉ số trong danh sách này). */
+let ttsVoices: string[] | null = null;
+async function voiceIndex(name: string): Promise<number> {
+  if (!ttsVoices) ttsVoices = (await TextToSpeech.getSupportedVoices()).voices.map((v) => v.voiceURI);
+  return ttsVoices.indexOf(name);
+}
+
+/** Chọn đích danh một giọng ĐÃ CÀI của đúng ngôn ngữ: ưu tiên giọng chạy trên máy, bỏ giọng chung "…-language"
+ *  (Google TTS có thể đổi giọng chung en-GB sang giọng Mỹ). Không có thì -1 (chỉ đặt ngôn ngữ). */
+async function pickVoice(voices: InstalledVoice[], lang: string): Promise<number> {
+  const same = voices.filter((v) => v.lang.toLowerCase() === lang.toLowerCase() && !v.name.endsWith("-language"));
+  same.sort((a, b) => Number(a.network) - Number(b.network) || a.name.localeCompare(b.name));
+  for (const v of same) {
+    const i = await voiceIndex(v.name);
+    if (i >= 0) return i;
+  }
+  return -1;
+}
 
 /** Đọc `text` bằng giọng `lang` (en-GB / en-US / vi-VN); thiếu en-GB thì đọc bằng en-US (báo "fallback-us"). */
 export async function ttsSpeak(text: string, lang: string): Promise<TtsResult> {
@@ -97,7 +120,8 @@ export async function ttsSpeak(text: string, lang: string): Promise<TtsResult> {
       res = "fallback-us";
     } else return "missing";
   }
-  await TextToSpeech.speak({ text, lang: use, rate: 0.9, queueStrategy: QueueStrategy.Flush });
+  const voice = await pickVoice(v.voices ?? [], use);
+  await TextToSpeech.speak({ text, lang: use, rate: 0.9, queueStrategy: QueueStrategy.Flush, ...(voice >= 0 ? { voice } : {}) });
   return res;
 }
 
