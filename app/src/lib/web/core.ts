@@ -5,7 +5,7 @@
 //
 // File này không phụ thuộc trình duyệt hay Vite: chỉ dùng một DataSource để đọc file dữ liệu,
 // nên chạy được trong Web Worker (worker.ts) lẫn trong Node (pipeline/web_core_cli.mjs, node có bỏ kiểu TS).
-import type { EnEntry, LookupView, Source, Suggestion, ViEntry } from "../types";
+import type { EnEntry, LookupView, Source, Suggestion, Usage, ViEntry } from "../types";
 
 // ---------------------------------------------------------------- định dạng dữ liệu xuất (export_web.py)
 
@@ -17,6 +17,8 @@ export interface Manifest {
   base: string;
   en_shards: number;
   vi_shards: number;
+  /** lớp cách dùng (u/NNNN.json); không có = dữ liệu cũ chưa có lớp này */
+  usage_shards?: number;
   hash: string;
   prefix: { len: number; max_len: number; space: string; other: string; split: string[]; split_bytes: number };
   relations: Record<string, string>;
@@ -496,6 +498,19 @@ export class DictCore {
     return Object.hasOwn(shard, word) ? shard[word] : null;
   }
 
+  /** Giới từ, kết hợp từ, câu theo vị trí. = Dict::usage: dữ liệu chưa có lớp này → null; từ không có dữ liệu → các danh
+   *  sách rỗng (file chỉ ghi từ có dữ liệu). */
+  async getUsage(word: string): Promise<Usage | null> {
+    const n = this.manifest.usage_shards;
+    if (!n) return null;
+    // "other": không giữ trong bộ nhớ đệm shard của worker (file u lớn, ~0,9 MB); trình duyệt tự lưu đệm (file bất biến)
+    const shard = await this.src.json<Record<string, Usage>>(`u/${pad4(fnv1a32(word) % n)}.json`, "other");
+    if (!shard) throw new Error("Dữ liệu của mục này bị lỗi, hãy tải lại trang");
+    return Object.hasOwn(shard, word)
+      ? shard[word]
+      : { word, preps: [], seqs: [], colls: [], roles: [], examples: [] };
+  }
+
   async sources(): Promise<Source[]> {
     return (await this.src.json<Source[]>("sources.json", "other")) ?? [];
   }
@@ -512,6 +527,8 @@ export class DictCore {
         return this.getEntry(s("word"));
       case "get_vi_entry":
         return this.getViEntry(s("word"));
+      case "get_usage":
+        return this.getUsage(s("word"));
       case "sources":
         return this.sources();
       default:

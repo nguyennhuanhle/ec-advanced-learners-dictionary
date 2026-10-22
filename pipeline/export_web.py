@@ -14,6 +14,8 @@ Bố cục (PLAN-web 4.2):
   manifest.json
   v<ver>/e/NNNN.json   {"<từ đầu mục>": EnEntry}   shard = fnv1a32(UTF-8 của từ đầu mục, đúng như trong DB) mod 2048
   v<ver>/v/NNNN.json   {"<từ Việt>": ViEntry}       shard = fnv1a32(UTF-8 của từ Việt) mod 1024
+  v<ver>/u/NNNN.json   {"<từ đầu mục>": Usage}      shard = fnv1a32(từ) mod 256 — giới từ, kết hợp từ, câu theo vị trí
+                       (= db.rs::usage(); chỉ từ có dữ liệu; tải riêng khi mở mục từ, UC-U40/U43/U46)
   v<ver>/p/<k>.json    chỉ mục tiền tố theo norm (xem bucket(); dấu cách → "_", chữ ngoài a–z → "~"):
         "h": [[từ, thứ hạng|null(, norm nếu khác norm tính lại)]…]   sắp theo (rank null sau, rank, độ dài, norm, từ)
         "f": [[form_norm, lemma, "i"|"v", tags(, [≤3 lemma cho gợi ý nếu khác [lemma]])]…]  lemma = đúng lựa chọn của en_resolve
@@ -52,6 +54,9 @@ MIN_UI = "0.1.0"          # phiên bản giao diện web tối thiểu đọc đ
 DB_SCHEMA = "2"           # = db.rs::SCHEMA_VERSION
 EN_SHARDS = 2048
 VI_SHARDS = 1024
+# Ít file: site giữ bản dữ liệu mới + một bản liền trước và publish_web.py chặn > 10.000 file cho cả site → mỗi bản phải
+# dưới ~4.950 file (e 2048 + v 1024 + p ~1540 + u 256 ≈ 4.870). Mỗi file u ~0,9 MB, ~200 KB gzip.
+U_SHARDS = 256
 SPLIT_BYTES = 128 * 1024  # tiền tố chưa nén lớn hơn → tách thêm một chữ (người dùng chọn 128 KiB ở W2; W1 dùng 64 KiB)
 MAX_FILES = 10_000        # ngưỡng hosting (use-cases: lỗi người bảo trì)
 MAX_FILE_BYTES = 5 * 1000 * 1000
@@ -341,6 +346,44 @@ def job_en(args):
     return path, len(data), _gz(data), n, no_label
 
 
+# = db.rs::Dict::usage(): cùng truy vấn, cùng thứ tự
+SQL_U_PREP = "SELECT pos, prep, obj, n, ratio, common FROM usage_prep WHERE headword = ?1 ORDER BY n DESC"
+SQL_U_SEQ = "SELECT pos, seq, n FROM usage_prep_seq WHERE headword = ?1 ORDER BY n DESC LIMIT 12"
+SQL_U_COLL = "SELECT pos, pattern, display, n FROM usage_coll WHERE headword = ?1 ORDER BY pos, pattern, rank"
+SQL_U_ROLE = "SELECT pos, role, n FROM usage_role WHERE headword = ?1 ORDER BY n DESC"
+SQL_U_EX = """SELECT pos, kind, key, text, source, hl_start, hl_end, n_words FROM usage_example WHERE headword = ?1
+             ORDER BY score DESC"""
+
+
+def usage_entry(con, word):
+    s = lambda v: v if isinstance(v, str) else ""  # noqa: E731  (Rust: kiểu khác → chuỗi rỗng / 0)
+    i = lambda v: int(v) if isinstance(v, (int, float)) else 0  # noqa: E731
+    f = lambda v: float(v) if isinstance(v, (int, float)) else 0.0  # noqa: E731
+    u = {
+        "word": word,
+        "preps": [{"pos": s(a), "prep": s(b), "obj": s(c), "n": i(d), "ratio": f(e), "common": i(g) != 0}
+                  for a, b, c, d, e, g in con.execute(SQL_U_PREP, (word,))],
+        "seqs": [{"pos": s(a), "seq": s(b), "n": i(c)} for a, b, c in con.execute(SQL_U_SEQ, (word,))],
+        "colls": [{"pos": s(a), "pattern": s(b), "display": s(c), "n": i(d)} for a, b, c, d in con.execute(SQL_U_COLL, (word,))],
+        "roles": [{"pos": s(a), "role": s(b), "n": i(c)} for a, b, c in con.execute(SQL_U_ROLE, (word,))],
+        "examples": [{"pos": s(a), "kind": s(b), "key": s(c), "text": s(d), "source": s(e), "a": i(g), "b": i(h),
+                      "n_words": i(k)} for a, b, c, d, e, g, h, k in con.execute(SQL_U_EX, (word,))],
+    }
+    return u if any(u[k] for k in ("preps", "seqs", "colls", "roles", "examples")) else None
+
+
+def job_usage(args):
+    path, words = args
+    shard = {}
+    for w in words:
+        u = usage_entry(_CON, w)
+        if u is not None:
+            shard[w] = u
+    data = dumps(shard)
+    _write(Path(path), data)
+    return path, len(data), _gz(data), len(shard), 0
+
+
 def job_vi(args):
     path, words, tato = args
     shard = {}
@@ -577,6 +620,7 @@ def main():
     viw = [r[0] for r in con.execute("SELECT word FROM vi_headword ORDER BY word")]
     if any(not w for w in viw):
         stop("vi_headword có từ rỗng.")
+    has_usage = con.execute("SELECT count(*) FROM sqlite_master WHERE name = 'usage_role'").fetchone()[0] > 0
     t1 = time.time()
     tato, n_cand = vi_tatoeba_all(con, viw)
     print(f"Tatoeba cho từ Việt: {n_cand} từ ứng viên, {len(tato)} từ có câu ({time.time() - t1:.1f} s)")
@@ -596,9 +640,17 @@ def main():
         vi_res = list(ex.map(job_vi, [(str(vdir / "v" / f"{i:04d}.json"), g, {w: tato[w] for w in g if w in tato})
                                       for i, g in enumerate(vi_groups)], chunksize=8))
         form_items = [x for part in ex.map(job_forms, fchunks) for x in part]
+        u_res = []
+        if has_usage:
+            u_groups = [[] for _ in range(U_SHARDS)]
+            for w in hw:
+                u_groups[fnv1a32(w) % U_SHARDS].append(w)
+            u_res = list(ex.map(job_usage, [(str(vdir / "u" / f"{i:04d}.json"), g) for i, g in enumerate(u_groups)],
+                                chunksize=8))
     print(f"Dựng mục từ + dạng biến đổi: {time.time() - t1:.1f} s ({args.jobs} tiến trình)")
     n_en = sum(r[3] for r in en_res)
     n_vi = sum(r[3] for r in vi_res)
+    n_usage = sum(r[3] for r in u_res)
     no_label = sum(r[4] for r in en_res)
     if no_label:
         stop(f"{no_label} khối có nghĩa AI nhưng thiếu `model` (nhãn AI).")
@@ -655,11 +707,13 @@ def main():
     manifest = {
         "schema_web": SCHEMA_WEB, "data_version": ver, "build_date": meta.get("build_date"), "min_ui": MIN_UI,
         "base": f"v/{vname}/", "en_shards": EN_SHARDS, "vi_shards": VI_SHARDS, "hash": "fnv1a32",
+        **({"usage_shards": U_SHARDS} if has_usage else {}),
         "prefix": {"len": 2, "max_len": MAX_KEY, "space": SPACE, "other": OTHER, "split": split,
                    "split_bytes": SPLIT_BYTES},
         "relations": {v: k for k, v in REL.items()},
         "counts": {"en_headwords": n_en, "entries": n_entries, "entries_ai": n_entries_ai, "vi_words": n_vi,
-                   "forms": len(form_items), "prefix_files": len(groups), "sources": len(sources)},
+                   "forms": len(form_items), "prefix_files": len(groups), "sources": len(sources),
+                   "usage_words": n_usage},
         "words_order": "fts_rowid",
         "files": len(files), "bytes": total,
         # cho lệnh db_status của bản web (= db.rs Dict::meta và Dict::counts())

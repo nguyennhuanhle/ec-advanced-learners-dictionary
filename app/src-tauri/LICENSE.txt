@@ -55,5 +55,14 @@ NGUỒN VÀ GHI CÔNG
 - ECDICT (chỉ dùng thứ hạng tần suất BNC/COCA và phiên âm dự phòng)
   Giấy phép: MIT
   Ghi công: skywind3000, ECDICT
+- Simple English Wikipedia, văn bản bài viết (bản xuất CirrusSearch của Wikimedia)
+  Giấy phép: CC BY-SA 4.0; GFDL
+  Ghi công: Những người đóng góp Simple English Wikipedia
+- English Wikipedia, văn bản bài viết, phần 1/66 (bản xuất CirrusSearch của Wikimedia)
+  Giấy phép: CC BY-SA 4.0; GFDL
+  Ghi công: Những người đóng góp English Wikipedia
+- English Wikipedia, văn bản bài viết, phần 2/66 (bản xuất CirrusSearch của Wikimedia)
+  Giấy phép: CC BY-SA 4.0; GFDL
+  Ghi công: Những người đóng góp English Wikipedia
 
 Bấm "Tôi đồng ý" để tiếp tục cài đặt.

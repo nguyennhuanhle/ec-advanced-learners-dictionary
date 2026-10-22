@@ -174,7 +174,7 @@ function dict(): DictCore {
 const str = (a: Record<string, unknown>, k: string) => (typeof a[k] === "string" ? (a[k] as string) : "");
 const int = (a: Record<string, unknown>, k: string) => (typeof a[k] === "number" ? Math.trunc(a[k] as number) : 0);
 
-const DICT_CMDS = new Set(["db_status", "suggest", "lookup", "get_entry", "get_vi_entry", "sources", "list_items", "export_csv_text"]);
+const DICT_CMDS = new Set(["db_status", "suggest", "lookup", "get_entry", "get_vi_entry", "get_usage", "sources", "list_items", "export_csv_text"]);
 
 async function handle(cmd: string, a: Record<string, unknown>): Promise<unknown> {
   // dữ liệu cá nhân mở độc lập với từ điển: mất mạng vẫn xem được danh sách, lịch sử
@@ -208,6 +208,7 @@ async function handle(cmd: string, a: Record<string, unknown>): Promise<unknown>
     case "lookup":
     case "get_entry":
     case "get_vi_entry":
+    case "get_usage":
     case "sources": {
       const v = await dict().call(cmd, a);
       dict().trimCache();

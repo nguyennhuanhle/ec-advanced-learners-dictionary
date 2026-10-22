@@ -907,7 +907,7 @@
             onToggleSave={toggleSave}
             onToggleVi={toggleVi}
             {onCopy}
-            loadUsage={IS_WEB ? undefined : api.getUsage}
+            loadUsage={api.getUsage}
             onShare={IS_ANDROID ? () => shareCurrent(`#/en/${enc(enWord)}`, enWord) : undefined}
           />
         {/key}

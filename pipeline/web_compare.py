@@ -186,6 +186,8 @@ def main():
             elif v.get("kind") == "choice":
                 for x in v["words"][:3]:
                     targets.add(("get_entry" if v["lang"] == "en" else "get_vi_entry", x))
+    # lớp cách dùng (giới từ, kết hợp từ, câu theo vị trí) của mọi từ tiếng Anh ở trên
+    targets |= {("get_usage", w) for c, w in targets if c == "get_entry"}
     targets = sorted(targets)
     ejobs = [{"cmd": c, "args": {"word": w}} for c, w in targets]
     eweb = node(ejobs)
@@ -227,7 +229,7 @@ def main():
         "## Tóm tắt",
         "",
         f"- **suggest + lookup: {ok}/{total} khớp hoàn toàn** ({len(set(q for _, q, _, _ in res))} chuỗi × 2 chế độ × 2 lệnh).",
-        f"- **Mục từ** (`get_entry`/`get_vi_entry` của mọi từ mà lookup trỏ tới): "
+        f"- **Mục từ** (`get_entry`/`get_vi_entry` của mọi từ mà lookup trỏ tới, và `get_usage` của từ tiếng Anh): "
         f"{len(targets) - len(entry_bad)}/{len(targets)} khớp" + (f" — khác: {entry_bad}" if entry_bad else "") + ".",
         f"- **600 ứng viên FTS** (mô phỏng bm25 + LIMIT 600 thay cho FTS5): {sum(1 for r in fts_rows if r[1])}/{len(fts_rows)} "
         f"chuỗi sai chính tả ra đúng cả danh sách và thứ tự như SQLite; chênh điểm bm25 lớn nhất "
