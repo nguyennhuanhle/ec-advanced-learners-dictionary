@@ -84,7 +84,7 @@ SITEMAP = """<?xml version="1.0" encoding="UTF-8"?>
 # Thẻ meta/link không bị CSP (chế độ hash) ràng buộc. Không dùng tên Oxford/Cambridge/… (CANNOT web).
 DESCRIPTION = (
     "Free English–English, English–Vietnamese and Vietnamese–English learner's dictionary: IPA, CEFR levels, "
-    "examples, collocations and learner notes. Từ điển Anh–Anh, Anh–Việt, Việt–Anh miễn phí cho người học."
+    "examples and learner notes. Từ điển Anh–Anh, Anh–Việt, Việt–Anh miễn phí cho người học."
 )
 HEAD_EXTRA = f"""
     <meta name="description" content="{DESCRIPTION}" />

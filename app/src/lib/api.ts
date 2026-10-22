@@ -12,6 +12,7 @@ import type {
   Mode,
   Source,
   Suggestion,
+  Usage,
   Via,
   ViEntry,
 } from "./types";
@@ -42,6 +43,8 @@ export const suggest = (q: string, mode: Mode) => call<Suggestion[]>("suggest", 
 export const lookup = (q: string, mode: Mode) => call<LookupView>("lookup", { q, mode });
 export const getEntry = (word: string) => call<EnEntry | null>("get_entry", { word });
 export const getViEntry = (word: string) => call<ViEntry | null>("get_vi_entry", { word });
+/** giới từ, kết hợp từ, câu theo vị trí — tải sau khi mục từ đã hiện (null: dữ liệu chưa có lớp này) */
+export const getUsage = (word: string) => call<Usage | null>("get_usage", { word });
 export const sources = () => call<Source[]>("sources");
 
 export const history = (limit = 200) => call<HistoryRow[]>("history", { limit });

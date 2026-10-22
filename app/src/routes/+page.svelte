@@ -24,7 +24,9 @@
     | { kind: "sources"; list: Source[] }
     | { kind: "settings" };
 
-  const SECTIONS: [string, "secPhrasal" | "secIdioms" | "secThes" | "secFamily" | "secTatoeba" | "secOrigin" | "secWikt" | "secNearby"][] = [
+  const SECTIONS: [string, "secColl" | "secUsage" | "secPhrasal" | "secIdioms" | "secThes" | "secFamily" | "secTatoeba" | "secOrigin" | "secWikt" | "secNearby"][] = [
+    ["coll", "secColl"],
+    ["usage", "secUsage"],
     ["phrasal", "secPhrasal"],
     ["idioms", "secIdioms"],
     ["thes", "secThes"],
@@ -905,6 +907,7 @@
             onToggleSave={toggleSave}
             onToggleVi={toggleVi}
             {onCopy}
+            loadUsage={IS_WEB ? undefined : api.getUsage}
             onShare={IS_ANDROID ? () => shareCurrent(`#/en/${enc(enWord)}`, enWord) : undefined}
           />
         {/key}

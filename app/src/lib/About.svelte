@@ -36,6 +36,7 @@
         "the Open English WordNet team;",
         "Tono Laboratory, Tokyo University of Foreign Studies (CEFR-J), and Octanove Labs;",
         "the contributors to Tatoeba;",
+        "the contributors to English and Simple English Wikipedia;",
         "skywind3000 (ECDICT).",
       ],
       toolsTitle: "AI tools",
@@ -116,6 +117,16 @@
           from: "Wiktionary · Gemini (AI) · Tatoeba",
         },
         {
+          id: "usage",
+          title: "Prepositions, collocations and examples by position",
+          body: [
+            "These come from about 10 million real English sentences: Tatoeba, Simple English Wikipedia and a sample of English Wikipedia (2 of its 66 dump parts). Each sentence was parsed automatically (spaCy) to find which prepositions follow a word (depend on, responsible for), which words it combines with (make / reach a decision) and where the word stands in the sentence (subject, object, after a preposition, passive…).",
+            "A preposition is listed when it follows the word often and much more often than it follows other words of the same part of speech. Collocations are ranked by a strength score (logDice). Example sentences are chosen by a quality score: complete, mostly common words, 5–35 words; sentences with offensive content or personal details are removed, and sentences about violence or with many names are used only when nothing better exists.",
+            "Nothing here is written by AI. The analysis is automatic, so a few sentences may be tagged with the wrong position, especially for rare words.",
+          ],
+          from: "Tatoeba · Wikipedia · spaCy (analysis only)",
+        },
+        {
           id: "thes",
           title: "Synonyms, opposites and word family",
           body: [
@@ -165,7 +176,7 @@
       dataLicTitle: "The dictionary data: CC BY-SA 4.0",
       dataLic: [
         "The dictionary database is licensed under Creative Commons Attribution-ShareAlike 4.0 (creativecommons.org/licenses/by-sa/4.0), because most of its source data uses that licence. You may reuse it if you credit the sources and share your work under the same licence.",
-        "Other sources keep their own licences (see the table above): Tatoeba sentences CC BY 2.0 FR, Open English WordNet CC BY 4.0, ECDICT MIT, CEFR-J free with citation.",
+        "Other sources keep their own licences (see the table above): Tatoeba sentences CC BY 2.0 FR, Wikipedia sentences CC BY-SA 4.0, Open English WordNet CC BY 4.0, ECDICT MIT, CEFR-J free with citation.",
         "The app licence above does not limit any right you have under these data licences.",
       ],
       swTitle: "Third-party software",
@@ -233,6 +244,7 @@
         "nhóm Open English WordNet;",
         "Phòng nghiên cứu Tono, Đại học Ngoại ngữ Tokyo (CEFR-J), và Octanove Labs;",
         "những người đóng góp cho Tatoeba;",
+        "những người đóng góp cho Wikipedia tiếng Anh và Simple English Wikipedia;",
         "skywind3000 (ECDICT).",
       ],
       toolsTitle: "Công cụ AI",
@@ -312,6 +324,16 @@
           from: "Wiktionary · Gemini (AI) · Tatoeba",
         },
         {
+          id: "usage",
+          title: "Giới từ, kết hợp từ và ví dụ theo vị trí",
+          body: [
+            "Phần này rút từ khoảng 10 triệu câu tiếng Anh thật: Tatoeba, Simple English Wikipedia và một phần English Wikipedia (2 trong 66 phần của bản xuất). Mỗi câu được máy phân tích cú pháp (spaCy) để tìm giới từ đi sau từ (depend on, responsible for), những từ hay đi cùng (make / reach a decision) và vị trí của từ trong câu (chủ ngữ, tân ngữ, sau giới từ, bị động…).",
+            "Một giới từ được ghi khi nó hay đi sau từ đó và đi sau từ đó nhiều hơn hẳn so với các từ cùng từ loại. Cụm kết hợp xếp theo điểm gắn kết (logDice). Câu ví dụ được chọn theo điểm chất lượng: câu trọn vẹn, phần lớn là từ thông dụng, 5–35 từ; câu có nội dung xúc phạm hoặc thông tin cá nhân bị loại, câu nói về bạo lực hay có nhiều tên riêng chỉ dùng khi không có câu tốt hơn.",
+            "Phần này không do AI viết. Việc phân tích là tự động nên một số ít câu có thể bị xếp sai vị trí, nhất là với từ hiếm.",
+          ],
+          from: "Tatoeba · Wikipedia · spaCy (chỉ để phân tích)",
+        },
+        {
           id: "thes",
           title: "Đồng nghĩa, trái nghĩa, họ từ",
           body: [
@@ -361,7 +383,7 @@
       dataLicTitle: "Dữ liệu từ điển: CC BY-SA 4.0",
       dataLic: [
         "Cơ sở dữ liệu từ điển phát hành theo giấy phép Creative Commons Ghi công – Chia sẻ tương tự 4.0 (creativecommons.org/licenses/by-sa/4.0), vì phần lớn dữ liệu nguồn dùng giấy phép này. Bạn được dùng lại dữ liệu nếu ghi công nguồn và chia sẻ sản phẩm theo cùng giấy phép.",
-        "Các nguồn khác giữ giấy phép riêng (xem bảng trên): câu Tatoeba theo CC BY 2.0 FR, Open English WordNet theo CC BY 4.0, ECDICT theo MIT, CEFR-J miễn phí và bắt buộc trích dẫn.",
+        "Các nguồn khác giữ giấy phép riêng (xem bảng trên): câu Tatoeba theo CC BY 2.0 FR, câu Wikipedia theo CC BY-SA 4.0, Open English WordNet theo CC BY 4.0, ECDICT theo MIT, CEFR-J miễn phí và bắt buộc trích dẫn.",
         "Giấy phép ứng dụng ở trên không hạn chế bất kỳ quyền nào bạn có theo các giấy phép dữ liệu này.",
       ],
       swTitle: "Phần mềm bên thứ ba",
@@ -421,6 +443,9 @@
     tatoeba_vie: ["Tatoeba, Vietnamese sentences"],
     tatoeba_links: ["Tatoeba, Vietnamese–English sentence links"],
     ecdict: ["ECDICT (BNC/COCA frequency ranks and fallback IPA only)"],
+    simplewiki: ["Simple English Wikipedia, article text (Wikimedia CirrusSearch dump)"],
+    enwiki_p0: ["English Wikipedia, article text, part 1 of 66 (Wikimedia CirrusSearch dump)"],
+    enwiki_p1: ["English Wikipedia, article text, part 2 of 66 (Wikimedia CirrusSearch dump)"],
     gemini: ["Gemini 3.8 Flash (via Antigravity CLI)", "AI-generated content, labelled AI"],
   };
 

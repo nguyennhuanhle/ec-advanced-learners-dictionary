@@ -105,6 +105,7 @@ impl Core {
             "lookup" => to_value(self.dict()?.lookup(arg_str(a, "q"), arg_str(a, "mode"))),
             "get_entry" => to_value(self.dict()?.entry(arg_str(a, "word"))),
             "get_vi_entry" => to_value(self.dict()?.vi_entry(arg_str(a, "word"))),
+            "get_usage" => to_value(self.dict()?.usage(arg_str(a, "word"))),
             "sources" => to_value(self.dict()?.sources()),
 
             "history" => to_value(self.user()?.history(a.get("limit").and_then(Value::as_i64).unwrap_or(200))),

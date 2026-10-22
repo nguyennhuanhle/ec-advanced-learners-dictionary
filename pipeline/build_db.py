@@ -22,6 +22,7 @@ from pathlib import Path
 
 from build_proto import cefr_table, clean_etym, oewn
 from enrich_sample import SKIP_TAGS, norm_pos, validate
+import usage_layer
 import vi_layer
 from ipa_ecdict import ecdict_to_ipa
 
@@ -216,7 +217,7 @@ CREATE TABLE antonym(entry_id INTEGER, word TEXT);
 CREATE TABLE family(headword TEXT, member TEXT);
 CREATE TABLE phrase_link(headword TEXT, phrase TEXT, kind TEXT, gloss TEXT, popularity INTEGER);
 CREATE VIRTUAL TABLE fts_headword USING fts5(word, tokenize='trigram remove_diacritics 1');
-""" + vi_layer.SCHEMA
+""" + vi_layer.SCHEMA + usage_layer.SCHEMA
 
 INDEXES = """
 CREATE INDEX entry_head ON entry(headword);
@@ -231,7 +232,7 @@ CREATE INDEX thes_entry ON thesaurus(entry_id);
 CREATE INDEX ant_entry ON antonym(entry_id);
 CREATE INDEX family_head ON family(headword);
 CREATE INDEX phrase_head ON phrase_link(headword);
-""" + vi_layer.INDEXES
+""" + vi_layer.INDEXES + usage_layer.INDEXES
 
 
 def main():
@@ -370,6 +371,8 @@ def main():
                           set(head_rank), rank)
     stats["vi_headwords"] = n_vi
     stats["vi_links"] = len(vi_links)
+    print("Lớp cách dùng: giới từ, kết hợp từ, câu theo vị trí (corpus.sqlite)...", flush=True)
+    stats["usage"] = usage_layer.write(con, set(head_rank))
     con.executescript(INDEXES)
     meta = {"schema_version": str(SCHEMA_VERSION), "data_version": time.strftime("%Y.%m.%d"),
             "build_date": time.strftime("%Y-%m-%dT%H:%M:%S"), "min_app_version": "0.1.0", "lang": "en"}
@@ -399,7 +402,7 @@ def coverage_report(tier_a, stats, n_entries, n_heads, n_form_of, n_phrases):
     rep = {
         "entries": n_entries, "headwords": n_heads, "lookup_forms": n_form_of, "phrase_links": n_phrases,
         "senses_full": stats["senses_full"], "senses_ai": stats["senses_ai"], "entries_ai": stats["entries_ai"],
-        "vi_headwords": stats["vi_headwords"], "vi_links": stats["vi_links"],
+        "vi_headwords": stats["vi_headwords"], "vi_links": stats["vi_links"], "usage": stats["usage"],
         "top20k": {
             "has_entry": pct("SELECT count(*) FROM top WHERE w IN (SELECT headword FROM entry)"),
             "has_ipa": pct("SELECT count(DISTINCT e.headword) FROM entry e JOIN pronunciation p ON p.entry_id=e.id "

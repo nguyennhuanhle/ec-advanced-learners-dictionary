@@ -243,6 +243,66 @@ pub struct Entry {
     pub known: Vec<String>,
 }
 
+/// Lớp "cách dùng" (UC-U40, U43, U46): giới từ đi kèm, kết hợp từ, câu ví dụ theo vị trí — câu thật từ corpus mở
+/// (pipeline/usage_layer.py). Trả dạng phẳng; giao diện tự nhóm theo từ loại / mẫu / vị trí.
+#[derive(Serialize)]
+pub struct UsagePrep {
+    pub pos: String,
+    pub prep: String,
+    /// "sth / doing sth / wh-"…
+    pub obj: String,
+    pub n: i64,
+    pub ratio: f64,
+    pub common: bool,
+}
+
+#[derive(Serialize)]
+pub struct UsageSeq {
+    pub pos: String,
+    pub seq: String,
+    pub n: i64,
+}
+
+#[derive(Serialize)]
+pub struct UsageColl {
+    pub pos: String,
+    pub pattern: String,
+    pub display: String,
+    pub n: i64,
+}
+
+#[derive(Serialize)]
+pub struct UsageRole {
+    pub pos: String,
+    pub role: String,
+    pub n: i64,
+}
+
+#[derive(Serialize)]
+pub struct UsageEx {
+    pub pos: String,
+    /// role / prep / seq / coll
+    pub kind: String,
+    /// mã vị trí, "giới từ|kiểu bổ ngữ", mẫu hai giới từ, hoặc "mẫu|cụm"
+    pub key: String,
+    pub text: String,
+    pub source: String,
+    /// vị trí từ được tô (đếm theo ký tự Unicode)
+    pub a: i64,
+    pub b: i64,
+    pub n_words: i64,
+}
+
+#[derive(Serialize)]
+pub struct Usage {
+    pub word: String,
+    pub preps: Vec<UsagePrep>,
+    pub seqs: Vec<UsageSeq>,
+    pub colls: Vec<UsageColl>,
+    pub roles: Vec<UsageRole>,
+    pub examples: Vec<UsageEx>,
+}
+
 #[derive(Serialize)]
 pub struct Source {
     pub id: String,
@@ -856,6 +916,76 @@ impl Dict {
             tatoeba,
             known,
         })
+    }
+
+    /// Giới từ đi kèm, kết hợp từ, câu theo vị trí của một từ. None khi DB chưa có lớp này (gói dữ liệu cũ).
+    pub fn usage(&self, word: &str) -> Option<Usage> {
+        let conn = self.conn.lock().unwrap();
+        conn.prepare_cached("SELECT 1 FROM usage_role LIMIT 1").ok()?;
+        let rows = |sql: &str| -> Vec<Vec<rusqlite::types::Value>> {
+            conn.prepare_cached(sql)
+                .and_then(|mut st| {
+                    let n = st.column_count();
+                    st.query_map(params![word], |r| (0..n).map(|i| r.get(i)).collect::<Result<Vec<_>, _>>())
+                        .map(|it| it.flatten().collect())
+                })
+                .unwrap_or_default()
+        };
+        use rusqlite::types::Value as V;
+        let txt = |v: &V| match v {
+            V::Text(s) => s.clone(),
+            _ => String::new(),
+        };
+        let int = |v: &V| match v {
+            V::Integer(i) => *i,
+            V::Real(f) => *f as i64,
+            _ => 0,
+        };
+        let real = |v: &V| match v {
+            V::Real(f) => *f,
+            V::Integer(i) => *i as f64,
+            _ => 0.0,
+        };
+        let preps = rows("SELECT pos, prep, obj, n, ratio, common FROM usage_prep WHERE headword = ?1 ORDER BY n DESC")
+            .iter()
+            .map(|r| UsagePrep {
+                pos: txt(&r[0]),
+                prep: txt(&r[1]),
+                obj: txt(&r[2]),
+                n: int(&r[3]),
+                ratio: real(&r[4]),
+                common: int(&r[5]) != 0,
+            })
+            .collect();
+        let seqs = rows("SELECT pos, seq, n FROM usage_prep_seq WHERE headword = ?1 ORDER BY n DESC LIMIT 12")
+            .iter()
+            .map(|r| UsageSeq { pos: txt(&r[0]), seq: txt(&r[1]), n: int(&r[2]) })
+            .collect();
+        let colls = rows("SELECT pos, pattern, display, n FROM usage_coll WHERE headword = ?1 ORDER BY pos, pattern, rank")
+            .iter()
+            .map(|r| UsageColl { pos: txt(&r[0]), pattern: txt(&r[1]), display: txt(&r[2]), n: int(&r[3]) })
+            .collect();
+        let roles = rows("SELECT pos, role, n FROM usage_role WHERE headword = ?1 ORDER BY n DESC")
+            .iter()
+            .map(|r| UsageRole { pos: txt(&r[0]), role: txt(&r[1]), n: int(&r[2]) })
+            .collect();
+        let examples = rows(
+            "SELECT pos, kind, key, text, source, hl_start, hl_end, n_words FROM usage_example WHERE headword = ?1
+             ORDER BY score DESC",
+        )
+        .iter()
+        .map(|r| UsageEx {
+            pos: txt(&r[0]),
+            kind: txt(&r[1]),
+            key: txt(&r[2]),
+            text: txt(&r[3]),
+            source: txt(&r[4]),
+            a: int(&r[5]),
+            b: int(&r[6]),
+            n_words: int(&r[7]),
+        })
+        .collect();
+        Some(Usage { word: word.to_string(), preps, seqs, colls, roles, examples })
     }
 
     pub fn exists(&self, word: &str) -> bool {

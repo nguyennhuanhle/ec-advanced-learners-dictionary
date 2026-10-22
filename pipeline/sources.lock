@@ -78,5 +78,29 @@
     "sha256": "1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf",
     "retrieved_at": "2026-10-06T11:10:52",
     "license": "MIT"
+  },
+  "simplewiki": {
+    "url": "https://dumps.wikimedia.org/other/cirrus_search_index/20261018/index_name=simplewiki_content/simplewiki_content-20261018-00000.json.bz2",
+    "file": "simplewiki-cirrus-20261018.json.bz2",
+    "bytes": 569642850,
+    "sha256": "8c9330f6f4c6f2c3af67c078ba6a5fcebaa2a2d1c01041821d013a3941f13b28",
+    "retrieved_at": "2026-10-22T14:59:11",
+    "license": "CC BY-SA 4.0; GFDL"
+  },
+  "enwiki_p0": {
+    "url": "https://dumps.wikimedia.org/other/cirrus_search_index/20261018/index_name=enwiki_content/enwiki_content-20261018-00000.json.bz2",
+    "file": "enwiki-cirrus-20261018-00000.json.bz2",
+    "bytes": 636099274,
+    "sha256": "782bc3614fd64a7fec7fccdcb351a8ac446ffa44bb2be475cee391fff3212658",
+    "retrieved_at": "2026-10-22T15:44:16",
+    "license": "CC BY-SA 4.0; GFDL"
+  },
+  "enwiki_p1": {
+    "url": "https://dumps.wikimedia.org/other/cirrus_search_index/20261018/index_name=enwiki_content/enwiki_content-20261018-00001.json.bz2",
+    "file": "enwiki-cirrus-20261018-00001.json.bz2",
+    "bytes": 634259960,
+    "sha256": "da3722a21b2a288443123ca3dd749d248ba41218327f0d36e7b59cffc67d601e",
+    "retrieved_at": "2026-10-22T15:52:02",
+    "license": "CC BY-SA 4.0; GFDL"
   }
 }

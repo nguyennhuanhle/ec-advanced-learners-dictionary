@@ -2,8 +2,11 @@
   // Mục từ tiếng Anh theo cấu trúc từ điển cho người học (UC-U11..U23).
   // Chữ giao diện qua t() (English / Tiếng Việt); nội dung từ điển giữ nguyên ngôn ngữ của nó.
   import Badge from "./Badge.svelte";
+  import Collocations from "./Collocations.svelte";
   import Icon from "./Icon.svelte";
-  import type { Block, EnEntry, LearnerSense, WiktSense } from "./types";
+  import UsageExamples from "./UsageExamples.svelte";
+  import type { Block, EnEntry, LearnerSense, Usage, WiktSense } from "./types";
+  import { sourceName, split } from "./usage";
   import { entryClip, senseClip } from "./copy";
   import type { Accent } from "./speech";
   import { t, ui } from "./i18n.svelte";
@@ -21,6 +24,7 @@
     onShare,
     accent = "us",
     closed = new Set<string>(),
+    loadUsage,
   }: {
     entry: EnEntry;
     showVi: boolean;
@@ -34,7 +38,64 @@
     onShare?: () => void;
     accent?: Accent;
     closed?: Set<string>;
+    /** giới từ, kết hợp từ, câu theo vị trí (UC-U40, U43, U46): tải sau khi mục từ đã hiện; không truyền = không có lớp này */
+    loadUsage?: (word: string) => Promise<Usage | null>;
   } = $props();
+
+  // ---- lớp cách dùng ----
+  let usage = $state<Usage | null>(null);
+  let usageErr = $state(false);
+  function fetchUsage() {
+    if (!loadUsage) return;
+    usageErr = false;
+    const w = entry.word;
+    loadUsage(w).then(
+      (u) => {
+        if (w === entry.word) usage = u;
+      },
+      () => {
+        if (w === entry.word) usageErr = true; // bản web: lỗi mạng chỉ ảnh hưởng khối này, có nút Thử lại
+      },
+    );
+  }
+  $effect(() => {
+    void entry.word;
+    usage = null;
+    fetchUsage();
+  });
+  const POS_ORDER = ["verb", "noun", "adj", "adv"];
+  const prepGroups = $derived(
+    usage
+      ? POS_ORDER.map((pos) => ({ pos, preps: usage!.preps.filter((p) => p.pos === pos) })).filter((g) => g.preps.length)
+      : [],
+  );
+  // mẫu hai giới từ: giới từ đầu phải là giới từ đi kèm đã đạt ngưỡng (bỏ "in the end … on …") và giới từ nào cũng có
+  // bổ ngữ (bỏ "decision by on" — máy không nhận ra bổ ngữ)
+  const OBJ = new Set(["sb", "sth", "wh-"]);
+  // giới từ thứ hai chỉ nơi chốn / thời gian thường là trạng ngữ, không thuộc mẫu ("responsible for sth in sth")
+  const ADVERBIAL = new Set(["in", "at", "during", "after", "before", "since", "until", "within", "through", "throughout", "around", "near", "over", "under"]);
+  const seqOk = (seq: string) => {
+    const w = seq.split(" ");
+    const preps = w.filter((x) => !OBJ.has(x) && x !== "doing");
+    return w.filter((x) => OBJ.has(x)).length >= preps.length && !preps.slice(1).some((p) => ADVERBIAL.has(p));
+  };
+  const seqs = $derived(
+    usage
+      ? usage.seqs
+          .filter((q) => q.n >= 20 && seqOk(q.seq) && usage!.preps.some((p) => p.pos === q.pos && p.prep === q.seq.split(" ")[0]))
+          .slice(0, 3)
+      : [],
+  );
+  let selPrep = $state("");
+  const prepExamples = $derived(
+    usage && selPrep
+      ? usage.examples
+          .filter((e) => e.kind === "prep" && `${e.pos}|${e.key.split("|")[0]}` === selPrep)
+          .slice(0, 2)
+      : [],
+  );
+  const hasColl = $derived(!!usage?.colls.length);
+  const hasUsageEx = $derived(!!usage?.examples.some((e) => e.kind === "role"));
 
   // tên từ loại tiếng Việt là một phần của lớp nghĩa Việt (hiện khi bật VI), không phải chữ giao diện
   const POS_VI: Record<string, string> = {
@@ -123,6 +184,8 @@
       label: (ui.lang === "vi" ? TYPE_VI : TYPE_EN)[b.entry_type] ?? b.pos,
       sub: b.senses.map((s) => s.guideword ?? "").filter(Boolean),
     })),
+    ...(hasColl ? [{ id: "coll", label: t("secColl"), sub: [] }] : []),
+    ...(hasUsageEx ? [{ id: "usage", label: t("secUsage"), sub: [] }] : []),
     ...(entry.phrasal_verbs.length ? [{ id: "phrasal", label: t("secPhrasal"), sub: [] }] : []),
     ...(entry.idioms.length ? [{ id: "idioms", label: t("secIdioms"), sub: [] }] : []),
     ...(thesaurusBlocks.length ? [{ id: "thes", label: t("secThes"), sub: [] }] : []),
@@ -210,6 +273,42 @@
         <span class="ipa"><span class="acc">UK</span> {#if entry.ipa.uk}{ipa(entry.ipa.uk)}{/if} {@render speakBtn(entry.word, "uk", t("voiceUk"))}</span>
         <span class="ipa"><span class="acc">US</span> {#if entry.ipa.us}{ipa(entry.ipa.us)}{/if} {@render speakBtn(entry.word, "us", t("voiceUs"))}</span>
       </div>
+      {#if prepGroups.length}
+        <!-- UC-U40: dòng giới từ đi kèm ngay dưới phần đầu mục từ -->
+        <div class="preps">
+          <span class="preps-lab">{t("usagePreps")}</span>
+          {#each prepGroups as g}
+            {#if prepGroups.length > 1}<span class="pos small">{g.pos}</span>{/if}
+            {#each g.preps as p, i}
+              {@const key = `${g.pos}|${p.prep}`}
+              {#if i}<span class="sep">·</span>{/if}
+              <button
+                class="prep"
+                class:on={selPrep === key}
+                title={t("prepTitle", { n: p.n.toLocaleString(), p: Math.max(1, Math.round(p.ratio * 100)) })}
+                onclick={() => (selPrep = selPrep === key ? "" : key)}
+              >
+                <b>{entry.word} {p.prep}</b>{#if p.obj}{" "}<span class="obj">{p.obj}</span>{/if}
+                <span class="freq" class:common={p.common}>{p.common ? t("prepCommon") : t("prepLess")}</span>
+              </button>
+            {/each}
+          {/each}
+          {#if seqs.length}
+            <div class="seqs">{t("usageSeq")} {#each seqs as q, i}{#if i}{"; "}{/if}<i>{entry.word} {q.seq}</i>{/each}</div>
+          {/if}
+          {#if prepExamples.length}
+            <ul class="pex">
+              {#each prepExamples as ex}
+                {@const [pre, hit, post] = split(ex)}
+                <li><span class="ex-en">{pre}<strong>{hit}</strong>{post}</span> <span class="srcn">— {sourceName(ex.source)}</span></li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      {/if}
+      {#if usageErr}
+        <div class="preps"><span class="muted">{t("usageFailed")}</span> <button class="retry" onclick={fetchUsage}>{t("retry")}</button></div>
+      {/if}
     </header>
 
     {#each entry.blocks as b, bi (b.pos)}
@@ -348,6 +447,26 @@
         {/if}
       </section>
     {/each}
+
+    {#if usage && hasColl}
+      <section class="extra" id="coll">
+        {@render fold("coll", t("secColl"), t("secCollSub"))}
+        {#if isOpen("coll")}
+          <Collocations {usage} word={entry.word} />
+          <p class="unote">{t("usageNote")}</p>
+        {/if}
+      </section>
+    {/if}
+
+    {#if usage && hasUsageEx}
+      <section class="extra" id="usage">
+        {@render fold("usage", t("secUsage"), t("secUsageSub"))}
+        {#if isOpen("usage")}
+          <UsageExamples {usage} word={entry.word} {accent} {onCopy} {onSpeak} />
+          <p class="unote">{t("usageNote")}</p>
+        {/if}
+      </section>
+    {/if}
 
     {#if entry.phrasal_verbs.length}
       <section class="extra" id="phrasal">
@@ -951,6 +1070,84 @@
     margin: 36px 0 12px;
     font-size: 0.8rem;
     color: var(--ink-3);
+  }
+
+  .preps {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+    font-size: 0.95rem;
+    line-height: 1.8;
+  }
+  .preps-lab {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    margin-right: 8px;
+  }
+  .pos.small {
+    font-size: 0.85rem;
+    margin: 0 4px 0 8px;
+  }
+  .prep {
+    border: 0;
+    background: none;
+    padding: 0 3px;
+    font: inherit;
+    color: var(--ink);
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .prep b {
+    color: var(--accent);
+  }
+  .prep:hover,
+  .prep.on {
+    background: var(--accent-soft);
+  }
+  .obj {
+    font-style: italic;
+    color: var(--ink-2);
+  }
+  .freq {
+    font-size: 0.68rem;
+    color: var(--ink-3);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0 0.35em;
+    margin-left: 3px;
+    vertical-align: 1px;
+  }
+  .freq.common {
+    color: var(--gw);
+    border-color: var(--gw);
+  }
+  .seqs {
+    font-size: 0.88rem;
+    color: var(--ink-2);
+  }
+  .pex {
+    margin: 2px 0 0;
+    padding-left: 1.2em;
+    font-size: 0.92rem;
+  }
+  .srcn,
+  .unote {
+    font-size: 0.78rem;
+    color: var(--ink-3);
+  }
+  .unote {
+    margin: 8px 0 0;
+  }
+  .retry {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 0 10px;
+    cursor: pointer;
+    color: var(--accent);
   }
 
   .toc {

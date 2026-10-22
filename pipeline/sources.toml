@@ -71,3 +71,25 @@ file = "ecdict.csv"
 license = "MIT"
 attribution = "skywind3000, ECDICT"
 forbidden_columns = ["oxford", "collins", "translation"]
+
+[sources.simplewiki]
+name = "Simple English Wikipedia, văn bản bài viết (bản xuất CirrusSearch của Wikimedia)"
+url = "https://dumps.wikimedia.org/other/cirrus_search_index/20261018/index_name=simplewiki_content/simplewiki_content-20261018-00000.json.bz2"
+file = "simplewiki-cirrus-20261018.json.bz2"
+license = "CC BY-SA 4.0; GFDL"
+attribution = "Những người đóng góp Simple English Wikipedia"
+
+# English Wikipedia: chỉ 2/66 phần của bản xuất CirrusSearch (mẫu ~3% bài viết), đủ cho kết hợp từ và câu ví dụ (PLAN-colloc).
+[sources.enwiki_p0]
+name = "English Wikipedia, văn bản bài viết, phần 1/66 (bản xuất CirrusSearch của Wikimedia)"
+url = "https://dumps.wikimedia.org/other/cirrus_search_index/20261018/index_name=enwiki_content/enwiki_content-20261018-00000.json.bz2"
+file = "enwiki-cirrus-20261018-00000.json.bz2"
+license = "CC BY-SA 4.0; GFDL"
+attribution = "Những người đóng góp English Wikipedia"
+
+[sources.enwiki_p1]
+name = "English Wikipedia, văn bản bài viết, phần 2/66 (bản xuất CirrusSearch của Wikimedia)"
+url = "https://dumps.wikimedia.org/other/cirrus_search_index/20261018/index_name=enwiki_content/enwiki_content-20261018-00001.json.bz2"
+file = "enwiki-cirrus-20261018-00001.json.bz2"
+license = "CC BY-SA 4.0; GFDL"
+attribution = "Những người đóng góp English Wikipedia"

@@ -65,6 +65,37 @@ export interface EnEntry {
   known: string[];
 }
 
+// Lớp cách dùng (UC-U40, U43, U46): db.rs › Dict::usage. pos theo từ loại của mục ("noun", "verb", "adj", "adv").
+export interface UsagePrep {
+  pos: string;
+  prep: string;
+  obj: string;
+  n: number;
+  ratio: number;
+  common: boolean;
+}
+
+export interface UsageEx {
+  pos: string;
+  kind: "role" | "prep" | "seq" | "coll";
+  key: string;
+  text: string;
+  source: string;
+  /** vị trí từ được tô, đếm theo ký tự Unicode */
+  a: number;
+  b: number;
+  n_words: number;
+}
+
+export interface Usage {
+  word: string;
+  preps: UsagePrep[];
+  seqs: { pos: string; seq: string; n: number }[];
+  colls: { pos: string; pattern: string; display: string; n: number }[];
+  roles: { pos: string; role: string; n: number }[];
+  examples: UsageEx[];
+}
+
 export interface ViHit {
   headword: string;
   pos: string;
