@@ -1,9 +1,17 @@
 # EC Advanced Learners' Dictionary
 
-An offline English–English, English–Vietnamese and Vietnamese–English learner's dictionary for Windows, built from open data.
-Từ điển Anh–Anh, Anh–Việt, Việt–Anh dùng offline trên Windows, dựng hoàn toàn từ dữ liệu mở.
+An offline English–English, English–Vietnamese and Vietnamese–English learner's dictionary for Windows and macOS, built from open data.
+Từ điển Anh–Anh, Anh–Việt, Việt–Anh dùng offline trên Windows và macOS, dựng hoàn toàn từ dữ liệu mở.
 
-**Download / Tải về:** [latest release (Windows installer)](../../releases/latest)
+**Download / Tải về:** [latest release](../../releases/latest) — Windows installer (`…_x64-setup.exe`, Windows 10/11 64-bit)
+or macOS disk image (`…_universal.dmg`, macOS 10.13 or later, Apple Silicon and Intel).
+Bộ cài Windows hoặc file `.dmg` cho Mac (chạy trên cả Mac chip M lẫn Mac Intel).
+
+The installers are not code-signed yet. On Windows, if SmartScreen warns, choose *More info › Run anyway*. On a Mac, the first
+time macOS blocks the app: open *System Settings › Privacy & Security* and click *Open Anyway* (the release notes cover the
+"app is damaged" message too).
+Bộ cài chưa ký số: Windows báo SmartScreen thì chọn *More info › Run anyway*; Mac chặn lần đầu thì vào
+*Cài đặt hệ thống › Quyền riêng tư & Bảo mật* và bấm *Vẫn mở* (Open Anyway).
 
 By Le Nguyen Nhu Anh (Lê Nguyễn Như Anh), [Edtech Corner](https://edtechcorner.com).
 
@@ -12,7 +20,7 @@ By Le Nguyen Nhu Anh (Lê Nguyễn Như Anh), [Edtech Corner](https://edtechcorn
 - 136,000+ English headwords and 116,000+ Vietnamese headwords; works fully offline, no account, sends nothing.
 - Learner layer for the 20,000 most frequent words: simple definitions, guidewords, grammar codes, CEFR level per sense,
   examples with Vietnamese translations (drafted by AI from Wiktionary and always labelled **AI**). The full Wiktionary text is kept alongside.
-- IPA (UK/US) with Windows text-to-speech, inflected forms (went → go), spelling suggestions, Vietnamese search with or without diacritics.
+- IPA (UK/US) with the system's text-to-speech voices (Windows or macOS), inflected forms (went → go), spelling suggestions, Vietnamese search with or without diacritics.
 - Synonyms and opposites (Open English WordNet), real English–Vietnamese sentence pairs (Tatoeba), word origin, phrasal verbs and idioms.
 - Word lists, history, CSV export (Excel / Anki / Quizlet), rich-text copy for Word; English or Vietnamese interface; light/dark; two colour schemes.
 
@@ -34,7 +42,7 @@ See [`LICENSE`](LICENSE). In short:
 
 ## Building from source
 
-Requirements: Python 3.12, Node.js, Rust (stable), Windows.
+Requirements: Python 3.12, Node.js, Rust (stable), Windows. (The macOS disk image is built on a Mac; its build steps are not documented here yet.)
 
 ```bash
 python pipeline/fetch.py          # download the open sources (checksums in pipeline/sources.lock)
