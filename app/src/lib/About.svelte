@@ -4,7 +4,7 @@
   import { APP_NAME, t, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { DESKTOP_DOWNLOAD, IS_ANDROID, IS_WEB, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
+  import { DESKTOP_DOWNLOAD, DESKTOP_RELEASES, DMG_SIZE, IS_ANDROID, IS_WEB, SETUP_SIZE, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
   import Icon from "./Icon.svelte";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
@@ -25,6 +25,23 @@
       dataVer: "Data version",
       built: "built",
       nav: ["Credits", "How the content is made", "Data sources", "Licence"],
+      dl: {
+        nav: "Download",
+        title: "Download the Windows and macOS apps (work offline)",
+        lead: "Install the dictionary on your computer to look words up without an Internet connection. The app has every feature of the web version and uses the same open data, but nothing has to be downloaded into the browser first, and it has no Google Analytics.",
+        winBtn: "Download for Windows",
+        winMeta: "Windows 10/11, 64-bit · about {size} · installs for your user account, no administrator rights needed",
+        winFile: "On the download page, choose the file ending in _x64-setup.exe.",
+        winSteps: "Run the file → Next → Install. The installer includes WebView2, so it also installs offline. Installing a new version over the old one keeps your history and word lists. Uninstall from Settings › Apps.",
+        winNote: "The installer is not code-signed yet, so Windows may show \"Windows protected your PC\". Click **More info**, then **Run anyway**.",
+        macBtn: "Download for macOS",
+        macMeta: "macOS 10.13 or later, Apple silicon and Intel Macs · about {size}",
+        macFile: "On the download page, choose the file ending in _universal.dmg.",
+        macSteps: "Open the .dmg → drag EC Advanced Learners’ Dictionary into Applications. Read-aloud uses the voices installed on your Mac. Uninstall: drag the app to the Trash.",
+        macNote: "The app is not signed with an Apple Developer ID yet, so macOS blocks it the first time. Click **Done**, open **System Settings › Privacy & Security**, scroll down and click **Open Anyway**. You only need to do this once.",
+        macDamaged: "If macOS says the app \"is damaged and can't be opened\", run this in Terminal, then open the app again:",
+        notes: "Release notes, SHA-256 checksums and earlier versions",
+      },
       creditsTitle: "Credits",
       createdBy: "Created by",
       author: AUTHOR_EN,
@@ -233,6 +250,23 @@
       dataVer: "Phiên bản dữ liệu",
       built: "dựng ngày",
       nav: ["Ghi công", "Cơ sở nội dung", "Nguồn dữ liệu", "Giấy phép"],
+      dl: {
+        nav: "Tải bản cài",
+        title: "Tải bản cài cho Windows và macOS (dùng không cần mạng)",
+        lead: "Cài từ điển lên máy tính để tra từ cả khi không có Internet. Bản cài có đủ chức năng của bản web và dùng cùng nguồn dữ liệu mở, nhưng không phải tải dữ liệu vào trình duyệt trước và không dùng Google Analytics.",
+        winBtn: "Tải cho Windows",
+        winMeta: "Windows 10/11, 64-bit · khoảng {size} · cài cho tài khoản đang dùng, không cần quyền quản trị",
+        winFile: "Ở trang tải, chọn file có đuôi _x64-setup.exe.",
+        winSteps: "Chạy file → Next → Install. Bộ cài có sẵn WebView2 nên cài được cả khi không có mạng. Cài bản mới đè lên bản cũ vẫn giữ lịch sử và danh sách từ. Gỡ trong Settings › Apps.",
+        winNote: "Bộ cài chưa có chữ ký số, nên Windows có thể hiện \"Windows protected your PC\". Bấm **More info** rồi **Run anyway** để cài.",
+        macBtn: "Tải cho macOS",
+        macMeta: "macOS 10.13 trở lên, Mac chip Apple và Intel · khoảng {size}",
+        macFile: "Ở trang tải, chọn file có đuôi _universal.dmg.",
+        macSteps: "Mở file .dmg → kéo EC Advanced Learners’ Dictionary vào thư mục Applications. Đọc to dùng giọng đọc có sẵn trên Mac. Gỡ: kéo app vào Thùng rác.",
+        macNote: "App chưa được ký bằng Apple Developer ID, nên lần đầu macOS sẽ chặn. Bấm **Done**, vào **Cài đặt hệ thống › Quyền riêng tư & Bảo mật**, kéo xuống và bấm **Vẫn mở** (Open Anyway). Chỉ cần làm một lần.",
+        macDamaged: "Nếu macOS báo app \"bị hỏng\" (is damaged), mở Terminal, chạy lệnh dưới rồi mở lại app:",
+        notes: "Ghi chú phát hành, mã SHA-256 và các bản trước",
+      },
       creditsTitle: "Ghi công",
       createdBy: "Tác giả",
       author: AUTHOR_VI,
@@ -459,6 +493,12 @@
     openExternalUrl(url).catch(() => {});
   }
   const jump = (i: number) => sectionEls[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Thẻ tải bản cài (UC-W09, 2026-10-23): chỉ bản web trên máy tính; neo #/about/download.
+  const SHOW_DL = IS_WEB && !IS_ANDROID;
+  const MAC_APP = "/Applications/EC Advanced Learners’ Dictionary.app";
+  let dlEl: HTMLElement | undefined = $state();
+  const jumpDl = () => dlEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const bold = (s: string) => s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 </script>
 
 <section class="about">
@@ -475,20 +515,43 @@
   </header>
   {#if IS_WEB}
     <div class="hero-links">
-      <!-- hai nút cùng trỏ Release mới nhất (tên file có số phiên bản); nút của máy đang dùng là nút chính (UC-W09, 2026-10-23) -->
-      {#if !IS_ANDROID}
-        <a class="btn" class:primary={!onMac} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {t("downloadWindows")}</a>
-        <a class="btn" class:primary={onMac} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {t("downloadMac")}</a>
-      {/if}
+      {#if SHOW_DL}<button class="btn primary" onclick={jumpDl}><Icon name="download" size={16} /> {t("downloadDesktop")}</button>{/if}
       <a class="btn" href={SITE_HOME} target="_blank" rel="noopener"><Icon name="home" size={16} /> {t("goSite")}</a>
     </div>
   {/if}
-  {#if IS_WEB && !IS_ANDROID}<p class="dl-pick">{t("downloadPick")}</p>{/if}
   <p class="intro">{IS_ANDROID ? c.introAndroid : IS_WEB ? c.introWeb : c.intro}</p>
 
   <nav class="toc">
+    {#if SHOW_DL}<button onclick={jumpDl}>{c.dl.nav}</button>{/if}
     {#each c.nav as label, i}<button onclick={() => jump(i)}>{label}</button>{/each}
   </nav>
+
+  {#if SHOW_DL}
+    <!-- hai nút cùng trỏ Release mới nhất (tên file có số phiên bản nên không có link tải thẳng cố định); cột của máy đang dùng đứng trước -->
+    <section class="card dl-card" id="download" bind:this={dlEl} aria-labelledby="dl-title">
+      <h2 id="dl-title">{c.dl.title}</h2>
+      <p>{c.dl.lead}</p>
+      <div class="dl-grid">
+        <div class="os" class:first={!onMac}>
+          <a class="btn" class:primary={!onMac} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.winBtn}</a>
+          <p class="meta">{c.dl.winMeta.replace("{size}", SETUP_SIZE)}</p>
+          <p class="small">{c.dl.winFile}</p>
+          <p class="small">{c.dl.winSteps}</p>
+          <p class="small note">{@html bold(c.dl.winNote)}</p>
+        </div>
+        <div class="os" class:first={onMac}>
+          <a class="btn" class:primary={onMac} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.macBtn}</a>
+          <p class="meta">{c.dl.macMeta.replace("{size}", DMG_SIZE)}</p>
+          <p class="small">{c.dl.macFile}</p>
+          <p class="small">{c.dl.macSteps}</p>
+          <p class="small note">{@html bold(c.dl.macNote)}</p>
+          <p class="small">{c.dl.macDamaged}</p>
+          <code class="cmd">xattr -dr com.apple.quarantine "{MAC_APP}"</code>
+        </div>
+      </div>
+      <p class="small"><a href={DESKTOP_RELEASES} target="_blank" rel="noopener">{c.dl.notes} ↗</a></p>
+    </section>
+  {/if}
 
   <h2 bind:this={sectionEls[0]}>{c.creditsTitle}</h2>
   <div class="credit-grid">
@@ -633,10 +696,63 @@
     border-color: var(--accent);
     color: #fff;
   }
-  .dl-pick {
-    margin: 8px 0 0;
-    font-size: 0.85rem;
+  .hero-links button.btn {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.92rem;
+    cursor: pointer;
+  }
+  .dl-card {
+    margin: 14px 0 4px;
+    scroll-margin-top: 12px;
+  }
+  .dl-card h2 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+  }
+  .dl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 12px 0 10px;
+  }
+  .os {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+  }
+  .os.first {
+    order: -1;
+  }
+  .os .btn {
+    margin-bottom: 8px;
+  }
+  .dl-card .meta {
     color: var(--ink-3);
+    font-size: 0.85rem;
+  }
+  .dl-card .small {
+    font-size: 0.88rem;
+  }
+  .dl-card .note {
+    background: var(--accent-soft);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .dl-card .cmd {
+    display: block;
+    max-width: 100%;
+    box-sizing: border-box;
+    white-space: normal; /* code toàn cục là nowrap: dòng lệnh dài sẽ nới cột lưới của cả trang */
+    overflow-wrap: anywhere;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 8px;
+    user-select: all;
   }
   .intro {
     margin: 16px 0 10px;

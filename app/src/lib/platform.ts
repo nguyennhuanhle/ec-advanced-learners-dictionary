@@ -100,6 +100,10 @@ export function devicePlatform(): "windows" | "mac" | "android" | "ios" | "other
 }
 
 /** Bộ cài bản desktop (dùng offline) — bản Release mới nhất trên GitHub (UC-M08). */
-export const DESKTOP_DOWNLOAD = "https://github.com/nguyennhuanhle/ec-advanced-learners-dictionary/releases/latest";
+export const DESKTOP_RELEASES = "https://github.com/nguyennhuanhle/ec-advanced-learners-dictionary/releases";
+export const DESKTOP_DOWNLOAD = `${DESKTOP_RELEASES}/latest`;
+/** Kích thước bộ cài của bản Release hiện hành (thẻ tải ở Giới thiệu, UC-W09) — cập nhật khi đăng bản mới. */
+export const SETUP_SIZE = "314 MB";
+export const DMG_SIZE = "167 MB";
 /** Trang chủ Edtech Corner (bản web có liên kết về, UC-W04). */
 export const SITE_HOME = "https://edtechcorner.com";

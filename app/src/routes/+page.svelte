@@ -218,6 +218,7 @@
     } else if (h.startsWith("/vi/")) go(`vi:${dec(h.slice(4))}`, false);
     else if (h.startsWith("/q/")) go(dec(h.slice(3)), false);
     else if (h === "/about") showSources(false);
+    else if (h === "/about/download") showSources(false, true);
     else if (h === "/settings") showSettings(false);
     else {
       screen = { kind: "home" };
@@ -556,11 +557,20 @@
     mainEl?.scrollTo({ top: 0 });
   }
 
-  async function showSources(push = true) {
+  /** Trang Giới thiệu; `toDownload` → cuộn tới thẻ tải bản cài Windows / macOS (UC-W09, neo #/about/download). */
+  async function showSources(push = true, toDownload = false) {
     sideOpen = false;
     screen = { kind: "sources", list: await api.sources() };
     current = "";
-    setHash("#/about", push);
+    setHash(toDownload ? "#/about/download" : "#/about", push);
+    await tick();
+    if (toDownload) document.getElementById("download")?.scrollIntoView({ block: "start" });
+    else mainEl?.scrollTo({ top: 0 });
+  }
+  /** Liên kết "tải bản cài" của bản web: mở thẻ tải trong trang thay vì sang GitHub ngay. */
+  function openDownload(e: MouseEvent) {
+    e.preventDefault();
+    showSources(true, true);
   }
   function showSettings(push = true) {
     sideOpen = false;
@@ -753,7 +763,7 @@
     {#if IS_WEB}
       <!-- bản web (UC-W09): tải bản Windows dùng offline, về trang Edtech Corner — mở tab mới -->
       {#if !IS_ANDROID}
-        <a class="icon-btn" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener" title={t("downloadDesktop")} aria-label={t("downloadDesktop")}>
+        <a class="icon-btn" href="#/about/download" onclick={openDownload} title={t("downloadDesktop")} aria-label={t("downloadDesktop")}>
           <Icon name="download" /><span class="wide-label">{t("offlineShort")}</span>
         </a>
       {/if}
@@ -885,7 +895,7 @@
             {/each}
           </div>
           {#if IS_WEB}
-            {#if !IS_ANDROID}<p class="desktop-dl"><a href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener">{t("downloadDesktop")}</a></p>{/if}
+            {#if !IS_ANDROID}<p class="desktop-dl"><a href="#/about/download" onclick={openDownload}>{t("downloadDesktop")}</a></p>{/if}
           {/if}
         </section>
       {:else if screen.kind === "entry"}
