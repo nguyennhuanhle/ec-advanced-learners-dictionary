@@ -4,7 +4,7 @@
   import { APP_NAME, t, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { DESKTOP_DOWNLOAD, IS_ANDROID, IS_WEB, SITE_HOME, openExternalUrl } from "./platform";
+  import { DESKTOP_DOWNLOAD, IS_ANDROID, IS_WEB, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
   import Icon from "./Icon.svelte";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
@@ -13,6 +13,7 @@
   const AUTHOR_VI = "Lê Nguyễn Như Anh";
   const CONTACT = "https://edtechcorner.com/contact";
   const YEAR = "2026";
+  const onMac = devicePlatform() === "mac";
 
   type Card = { id: string; title: string; body: string[]; from: string };
   const C = {
@@ -474,10 +475,15 @@
   </header>
   {#if IS_WEB}
     <div class="hero-links">
-      {#if !IS_ANDROID}<a class="btn primary" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {t("downloadDesktop")}</a>{/if}
+      <!-- hai nút cùng trỏ Release mới nhất (tên file có số phiên bản); nút của máy đang dùng là nút chính (UC-W09, 2026-10-23) -->
+      {#if !IS_ANDROID}
+        <a class="btn" class:primary={!onMac} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {t("downloadWindows")}</a>
+        <a class="btn" class:primary={onMac} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {t("downloadMac")}</a>
+      {/if}
       <a class="btn" href={SITE_HOME} target="_blank" rel="noopener"><Icon name="home" size={16} /> {t("goSite")}</a>
     </div>
   {/if}
+  {#if IS_WEB && !IS_ANDROID}<p class="dl-pick">{t("downloadPick")}</p>{/if}
   <p class="intro">{IS_ANDROID ? c.introAndroid : IS_WEB ? c.introWeb : c.intro}</p>
 
   <nav class="toc">
@@ -626,6 +632,11 @@
     background: var(--accent);
     border-color: var(--accent);
     color: #fff;
+  }
+  .dl-pick {
+    margin: 8px 0 0;
+    font-size: 0.85rem;
+    color: var(--ink-3);
   }
   .intro {
     margin: 16px 0 10px;
