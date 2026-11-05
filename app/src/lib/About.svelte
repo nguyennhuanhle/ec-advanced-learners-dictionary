@@ -234,6 +234,7 @@
         "No account, no advertising, no analytics. The app does not collect or share any data.",
         "Your history, word lists and settings are stored only inside the app on this phone. The app does not use Android's automatic backup, so uninstalling the app deletes them — use Settings › Backup to keep a copy.",
         "Read-aloud uses the text-to-speech engine of your phone; that engine (for example Speech Services by Google) follows its own privacy terms.",
+        "Text you select or share from another app to look it up stays on this phone. Like any lookup, it is added to your history.",
         "Links to websites (edtechcorner.com, data sources, licences) open in your phone's browser.",
       ],
       swAndroid: [
@@ -456,6 +457,7 @@
         "Không tài khoản, không quảng cáo, không thống kê. App không thu thập và không chia sẻ dữ liệu nào.",
         "Lịch sử, danh sách từ và cài đặt chỉ lưu trong app trên điện thoại này. App không dùng sao lưu tự động của Android, nên gỡ app là mất — hãy dùng Cài đặt › Sao lưu để giữ một bản.",
         "Đọc to dùng bộ đọc văn bản của điện thoại; bộ đọc đó (ví dụ Speech Services by Google) theo điều khoản quyền riêng tư của nó.",
+        "Chữ bạn bôi đen hoặc chia sẻ từ app khác để tra chỉ nằm trên điện thoại này. Như mọi lần tra, nó được ghi vào lịch sử.",
         "Liên kết tới trang web (edtechcorner.com, nguồn dữ liệu, giấy phép) mở bằng trình duyệt của điện thoại.",
       ],
       swAndroid: [

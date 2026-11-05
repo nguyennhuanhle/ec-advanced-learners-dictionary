@@ -26,6 +26,26 @@
 
         </activity>
 
+        <!-- tra chữ bôi đen trong app khác (UC-A08) và chữ chia sẻ vào app (UC-A12); không cần quyền nào -->
+        <activity
+            android:name=".LookupActivity"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

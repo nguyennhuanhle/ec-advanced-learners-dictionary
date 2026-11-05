@@ -71,6 +71,10 @@
   /** màn hình cảm ứng (điện thoại, máy tính bảng, app Android): mẹo ở trang chủ nói "chạm" thay vì "nhấp đúp / Alt+←" */
   const touch = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
   let sideOpen = $state(false); // màn hình hẹp: lịch sử / danh sách mở thành ngăn kéo
+  let lastLookup = $state(""); // app Android: mục tra gần nhất, để nút "Tra từ" ở thanh dưới quay lại từ Cài đặt (UC-A11)
+  let fromOtherApp = $state(false); // app Android: vừa tra chữ nhận từ app khác → Back lần đầu về app đó (UC-A08)
+  let kbdOpen = $state(false); // app Android: bàn phím đang mở → ẩn thanh dưới
+  let bnavH = $state(0); // chiều cao thanh dưới (0 khi ẩn): thông báo và nút "Tra" nổi nằm trên nó
   let pick = $state(""); // bản web, màn hình cảm ứng: từ đang được chọn → nút "Tra" nổi (UC-W02)
   let navIdx = $state(0); // bản web: vị trí trong lịch sử trình duyệt (nút lùi/tiến, UC-W03)
   let navMax = $state(0);
@@ -129,7 +133,8 @@
     }
     applyLook();
     window.speechSynthesis?.getVoices(); // nạp sẵn danh sách giọng
-    inputEl?.focus();
+    // app Android: ô tra giữ con trỏ thì bàn phím tự bật lại mỗi lần quay về app, che thanh dưới
+    if (!IS_ANDROID) inputEl?.focus();
   });
 
   /** Bản web: tham số ?lang=&theme= (UC-W04), địa chỉ "#" (UC-W03), nút "Tra" khi chọn từ trên màn hình cảm ứng (UC-W02). */
@@ -161,11 +166,14 @@
   // ---------- app Android (PLAN-android A2) ----------
   /** Nút Back/cử chỉ vuốt lùi (UC-A02): đóng hộp thoại/ngăn kéo trước, rồi lùi trong lịch sử của app.
    *  Ở màn gốc thì handler TẮT để Android tự xử lý (thoát app, có hoạt ảnh predictive back) — PLAN-android mục 7. */
-  const canBack = $derived(!!copyManual || sideOpen || navIdx > 0);
+  const canBack = $derived(!!copyManual || sideOpen || fromOtherApp || navIdx > 0);
   function onAndroidBack() {
     if (copyManual) copyManual = "";
     else if (sideOpen) sideOpen = false;
-    else if (navIdx > 0) history.back();
+    else if (fromOtherApp) {
+      fromOtherApp = false;
+      loadAndroid().then((a) => a.minimizeApp());
+    } else if (navIdx > 0) history.back();
   }
   $effect(() => {
     if (!IS_ANDROID) return;
@@ -187,6 +195,47 @@
       e.preventDefault();
       openExternalUrl(el.href);
     });
+    watchKeyboard();
+    // chữ bôi đen hoặc chia sẻ từ app khác (UC-A08, UC-A12): chỉ dùng làm từ khoá tra, như khi tự gõ
+    await a.initTextIntent(async (text, self) => {
+      await go(text);
+      fromOtherApp = !self;
+    });
+  }
+  /** Bàn phím mở làm WebView thấp đi: ẩn thanh dưới để không che gợi ý. Bàn phím phủ lên WebView thì thanh nằm dưới nó, không cần làm gì. */
+  function watchKeyboard() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    let full = vv.height;
+    const update = () => {
+      full = Math.max(full, vv.height);
+      kbdOpen = full - vv.height > 120;
+    };
+    vv.addEventListener("resize", update);
+    matchMedia("(orientation: portrait)").addEventListener("change", () => {
+      full = 0; // xoay máy: đo lại chiều cao đầy đủ
+      update();
+    });
+  }
+  // thanh điều hướng dưới (UC-A10, UC-A11)
+  const bnavOn = $derived(sideOpen ? tab : screen.kind === "settings" || screen.kind === "sources" ? "settings" : "lookup");
+  function bnavPanel(which: "history" | "lists") {
+    tab = which;
+    sideOpen = true;
+  }
+  async function bnavLookup() {
+    sideOpen = false;
+    if (screen.kind === "settings" || screen.kind === "sources") {
+      if (lastLookup) await go(lastLookup);
+      else {
+        screen = { kind: "home" };
+        current = "";
+        setHash("#/", true);
+      }
+    }
+    await tick();
+    mainEl?.scrollTo({ top: 0 });
+    inputEl?.focus();
   }
   /** UC-A06: chia sẻ link bản web của mục đang xem (người nhận không cần cài app). */
   async function shareCurrent(hash: string, label: string) {
@@ -512,8 +561,11 @@
     sugOpen = false;
     sugIndex = -1;
     sideOpen = false;
+    fromOtherApp = false;
     pick = "";
+    if (IS_ANDROID) inputEl?.blur();
     const key = raw.startsWith("vi:") ? `vi:${q}` : q;
+    lastLookup = key;
     const seq = ++goSeq;
     let view: LookupView;
     let entry: EnEntry | ViEntry | null = null;
@@ -560,6 +612,7 @@
   /** Trang Giới thiệu; `toDownload` → cuộn tới thẻ tải bản cài Windows / macOS (UC-W09, neo #/about/download). */
   async function showSources(push = true, toDownload = false) {
     sideOpen = false;
+    fromOtherApp = false;
     screen = { kind: "sources", list: await api.sources() };
     current = "";
     setHash(toDownload ? "#/about/download" : "#/about", push);
@@ -574,6 +627,7 @@
   }
   function showSettings(push = true) {
     sideOpen = false;
+    fromOtherApp = false;
     screen = { kind: "settings" };
     current = "";
     setHash("#/settings", push);
@@ -679,7 +733,7 @@
 <svelte:head><title>{APP_NAME}</title></svelte:head>
 <svelte:window onkeydown={onGlobalKey} />
 
-<div class="app">
+<div class="app" class:android={IS_ANDROID} style:--bnav-h={IS_ANDROID ? `${bnavH}px` : undefined}>
   <header class="topbar">
     <button class="icon-btn menu-btn" onclick={() => (sideOpen = !sideOpen)} title={t("menu")} aria-label={t("menu")} aria-expanded={sideOpen}><Icon name="history" /></button>
     <div class="brand">
@@ -767,11 +821,11 @@
           <Icon name="download" /><span class="wide-label">{t("offlineShort")}</span>
         </a>
       {/if}
-      <a class="icon-btn" href={SITE_HOME} target="_blank" rel="noopener" title={t("goSite")} aria-label={t("goSite")}>
+      <a class="icon-btn site-btn" href={SITE_HOME} target="_blank" rel="noopener" title={t("goSite")} aria-label={t("goSite")}>
         <Icon name="home" /><span class="wide-label">EdTech Corner</span>
       </a>
     {/if}
-    <button class="icon-btn" onclick={() => showSettings()} title={t("settings")} aria-label={t("settings")}><Icon name="gear" /></button>
+    <button class="icon-btn settings-btn" onclick={() => showSettings()} title={t("settings")} aria-label={t("settings")}><Icon name="gear" /></button>
   </header>
 
   {#if sideOpen}<div class="side-bg" role="presentation" onclick={() => (sideOpen = false)}></div>{/if}
@@ -1049,6 +1103,15 @@
       {/if}
     </div>
   </main>
+
+  {#if IS_ANDROID}
+    <nav class="bnav" class:hide={kbdOpen} aria-label={t("menu")} bind:clientHeight={bnavH}>
+      <button class:on={bnavOn === "lookup"} aria-current={bnavOn === "lookup" ? "page" : undefined} aria-label={t("navLookup")} onclick={bnavLookup}><Icon name="search" /><span>{t("navLookup")}</span></button>
+      <button class:on={bnavOn === "history"} aria-current={bnavOn === "history" ? "page" : undefined} aria-label={t("tabHistory")} onclick={() => bnavPanel("history")}><Icon name="history" /><span>{t("tabHistory")}</span></button>
+      <button class:on={bnavOn === "lists"} aria-current={bnavOn === "lists" ? "page" : undefined} aria-label={t("navLists")} onclick={() => bnavPanel("lists")}><Icon name={bnavOn === "lists" ? "star-fill" : "star"} /><span>{t("navLists")}</span></button>
+      <button class:on={bnavOn === "settings"} aria-current={bnavOn === "settings" ? "page" : undefined} aria-label={t("settings")} onclick={() => showSettings()}><Icon name="gear" /><span>{t("settings")}</span></button>
+    </nav>
+  {/if}
 
   {#if pick}
     <button class="pick" onmousedown={(e) => e.preventDefault()} onclick={() => { const w = pick; window.getSelection()?.removeAllRanges(); go(w); }}>
@@ -1745,6 +1808,10 @@
   .main {
     touch-action: manipulation;
   }
+  /* thanh dưới của app Android: chỉ hiện trong bố cục hẹp (máy tính bảng ngang giữ cột bên) */
+  .bnav {
+    display: none;
+  }
 
   /* màn hình hẹp, hoặc điện thoại xoay ngang (thấp): lịch sử / danh sách thành ngăn kéo */
   @media (max-width: 860px), (orientation: landscape) and (max-height: 500px) {
@@ -1785,6 +1852,85 @@
       inset: 0;
       z-index: 40;
       background: rgba(0, 0, 0, 0.35);
+    }
+    /* app Android trên điện thoại (UC-A10): thanh dưới thay nút lịch sử, Cài đặt ở đầu trang; Lịch sử và Danh sách chiếm cả
+       vùng nội dung thay vì ngăn kéo. Cùng một ô lưới với .main nên không cần biết chiều cao thanh dưới. */
+    .app.android {
+      grid-template-rows: auto 1fr auto;
+    }
+    .app.android .menu-btn,
+    .app.android .theme,
+    .app.android .palette,
+    .app.android .site-btn,
+    .app.android .settings-btn,
+    .app.android .side-bg,
+    .app.android .side .tabs {
+      display: none;
+    }
+    .app.android .brand {
+      flex: 1;
+    }
+    .app.android .main {
+      grid-row: 2;
+      grid-column: 1;
+    }
+    .app.android .side {
+      position: relative;
+      grid-row: 2;
+      grid-column: 1;
+      top: auto;
+      left: auto;
+      bottom: auto;
+      width: auto;
+      z-index: 1;
+      display: none;
+      padding-top: 0;
+      padding-bottom: 0;
+      transform: none;
+      transition: none;
+      box-shadow: none;
+      border-right: 0;
+    }
+    .app.android .side.open {
+      display: flex;
+    }
+    .bnav {
+      display: flex;
+      grid-row: 3;
+      grid-column: 1;
+      z-index: 40;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    .bnav.hide {
+      display: none;
+    }
+    .bnav button {
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      border: 0;
+      background: none;
+      color: var(--ink-2);
+      font: inherit;
+      font-size: 0.75rem;
+      line-height: 1.15;
+      text-align: center;
+      padding: 6px 2px;
+    }
+    .bnav button.on {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .app.android .toast,
+    .app.android .pick {
+      bottom: calc(18px + max(var(--bnav-h), env(safe-area-inset-bottom)));
     }
   }
 
@@ -1885,6 +2031,14 @@
     .modes button {
       flex: 0 0 auto;
       padding: 6px 8px;
+    }
+    /* xoay ngang: thanh dưới chỉ còn biểu tượng, chừa chỗ cho mục từ */
+    .bnav button {
+      min-height: 40px;
+      padding: 2px;
+    }
+    .bnav button span {
+      display: none;
     }
   }
 </style>

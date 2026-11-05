@@ -31,6 +31,25 @@ export async function setBackEnabled(on: boolean): Promise<void> {
   }
 }
 
+/** Về app đang đọc sau khi tra chữ nhận từ app đó (UC-A08). */
+export async function minimizeApp(): Promise<void> {
+  await App.minimizeApp();
+}
+
+// ---------- chữ nhận từ app khác (UC-A08, UC-A12; android/…/TextIntentPlugin.java) ----------
+const TextIntent = registerPlugin<{
+  take(): Promise<{ text?: string; self?: boolean }>;
+  addListener(event: "text", cb: (d: { text: string; self: boolean }) => void): Promise<unknown>;
+}>("TextIntent");
+
+/** Gọi `handler` với chữ đã có lúc khởi động nguội (nếu có) và mỗi lần nhận chữ mới khi app đang chạy.
+ *  `self` = chữ chọn ngay trong app này (menu chữ của Android cũng liệt kê chính app). */
+export async function initTextIntent(handler: (text: string, self: boolean) => void): Promise<void> {
+  await TextIntent.addListener("text", (d) => handler(d.text, d.self));
+  const { text, self } = await TextIntent.take();
+  if (text) handler(text, !!self);
+}
+
 // ---------- thanh trạng thái / thanh điều hướng (tràn viền, PLAN-android mục 8) ----------
 /** Thanh trạng thái nằm trên đầu trang màu đậm → chữ/biểu tượng sáng. Thanh điều hướng nằm trên nền trang → theo sáng/tối. */
 export async function setBarsStyle(darkPage: boolean): Promise<void> {
