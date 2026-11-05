@@ -515,7 +515,7 @@
       </div>
     </div>
   </header>
-  {#if IS_WEB}
+  {#if IS_WEB && !IS_ANDROID}
     <div class="hero-links">
       {#if SHOW_DL}<button class="btn primary" onclick={jumpDl}><Icon name="download" size={16} /> {t("downloadDesktop")}</button>{/if}
       <a class="btn" href={SITE_HOME} target="_blank" rel="noopener"><Icon name="home" size={16} /> {t("goSite")}</a>

@@ -62,8 +62,16 @@ export async function setBarsStyle(darkPage: boolean): Promise<void> {
 }
 
 // ---------- liên kết ngoài (UC-A07): mở bằng trình duyệt của máy; app không có quyền INTERNET ----------
+const ExternalLink = registerPlugin<{ open(o: { url: string }): Promise<void> }>("ExternalLink");
+
+/** App trình duyệt riêng (android/…/ExternalLinkPlugin.java), không phải Custom Tab nằm trong app. Máy không có trình duyệt
+ *  nào nhận liên kết thì mới dùng Custom Tab. */
 export async function openExternal(url: string): Promise<void> {
-  await Browser.open({ url });
+  try {
+    await ExternalLink.open({ url });
+  } catch {
+    await Browser.open({ url });
+  }
 }
 
 // ---------- clipboard (U36) ----------

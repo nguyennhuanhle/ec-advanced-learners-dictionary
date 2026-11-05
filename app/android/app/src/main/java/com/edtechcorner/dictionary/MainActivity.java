@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         // plugin riêng của app (không phải gói npm) phải đăng ký trước super.onCreate
         registerPlugin(VoiceCheckPlugin.class);
         registerPlugin(TextIntentPlugin.class);
+        registerPlugin(ExternalLinkPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

@@ -821,9 +821,12 @@
           <Icon name="download" /><span class="wide-label">{t("offlineShort")}</span>
         </a>
       {/if}
-      <a class="icon-btn site-btn" href={SITE_HOME} target="_blank" rel="noopener" title={t("goSite")} aria-label={t("goSite")}>
-        <Icon name="home" /><span class="wide-label">EdTech Corner</span>
-      </a>
+      <!-- app Android: không có liên kết về trang chủ Edtech Corner (người thử bấm nhầm, tưởng app mở trình duyệt; người dùng bỏ 2026-11-05) -->
+      {#if !IS_ANDROID}
+        <a class="icon-btn site-btn" href={SITE_HOME} target="_blank" rel="noopener" title={t("goSite")} aria-label={t("goSite")}>
+          <Icon name="home" /><span class="wide-label">EdTech Corner</span>
+        </a>
+      {/if}
     {/if}
     <button class="icon-btn settings-btn" onclick={() => showSettings()} title={t("settings")} aria-label={t("settings")}><Icon name="gear" /></button>
   </header>
@@ -1097,8 +1100,8 @@
       {/if}
       {#if IS_WEB}
         <footer class="site-foot">
-          {t("footData")} · <button class="k" onclick={() => showSources()}>{t("footAbout")}</button> ·
-          <a href={SITE_HOME} target="_blank" rel="noopener">EdTech Corner</a>
+          {t("footData")} · <button class="k" onclick={() => showSources()}>{t("footAbout")}</button>
+          {#if !IS_ANDROID}· <a href={SITE_HOME} target="_blank" rel="noopener">EdTech Corner</a>{/if}
         </footer>
       {/if}
     </div>
