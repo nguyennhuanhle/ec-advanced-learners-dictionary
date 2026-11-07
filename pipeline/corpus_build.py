@@ -306,9 +306,12 @@ def merge():
                 continue
             ratio = n / occ_n
             lift = ratio / max(1e-9, posprep[(pos, p)] / max(1, postok[pos]))
-            ok = C.prep_pass(n, ratio, lift, pos)
             ob = objs[(lem, pos, p)]
             obj_s = " / ".join(o for o, v in ob.most_common(3) if v >= max(2, 0.15 * n))
+            # Giới từ thường đi với V-ing (succeed in doing, plan on doing, chance of doing) vẫn qua dù lift thấp: "in"
+            # sau động từ rất phổ biến (in 1990, in London) nên lift của succeed in chỉ 1,98 < 2,5. Đo 2026-11-07 trên
+            # corpus 2026-10-22: thêm 19 mẫu, đều đúng (idea of, succeed in, assist in, delight in…).
+            ok = C.prep_pass(n, ratio, lift, pos) or ("doing" in obj_s and n >= 30 and ratio >= 0.1 and lift >= 1.2)
             label = ("thường gặp" if ratio >= 0.2 else "ít gặp") if ok else ""
             prep_rows.append((lem, pos, p, obj_s, n, round(ratio, 4), round(lift, 2), int(ok), label))
     passed = {(r[0], r[1], r[2]) for r in prep_rows if r[7]}
@@ -329,6 +332,12 @@ def merge():
     coll_rows = []
     for (lem, pos, pat), items in groups.items():
         items.sort(key=lambda x: (-x[0], -x[1]))
+        # do/have + N (2026-11-07): logDice phạt động từ quá thường gặp nên "have an impact" (1.473 lần) đứng thứ 12 sau
+        # "minimize" (44 lần). Khi do/have là động từ đi với danh từ này nhiều nhất, đưa lên đầu.
+        if pat == "V + N":
+            top_n = max(x[1] for x in items)
+            light = [x for x in items if x[3] in C.LIGHT_VERBS and x[1] == top_n]
+            items[:] = light + [x for x in items if x not in light]
         for rank, (ld, n, disp, cl, ex) in enumerate(items[:COLL_TOP], 1):
             coll_rows.append((lem, pos, pat, disp, cl, n, ld, rank, ex))
     print(f"[merge] {len(prep_rows):,} mẫu giới từ ứng viên ({len(passed):,} đạt), {len(seq_rows):,} mẫu hai giới từ, "

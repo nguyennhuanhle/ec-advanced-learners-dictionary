@@ -57,9 +57,35 @@ def norm(s):
     return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn").strip()
 
 
+# Lỗi chính tả trong guideword do AI viết (2026-11-07: soát mọi guideword có từ không phải tiếng Anh, 40 kết quả, chỉ 2 chỗ
+# là gõ sai thật; còn lại là tên riêng, từ ghép, chính tả Anh–Mỹ). Chỉ sửa chữ, không đổi nội dung.
+GUIDEWORD_TYPO = {"FINEY": "MONEY", "FREQENCY": "FREQUENCY"}
+
+
 def ipa_clean(s):
     # ɹ → r như từ điển người học; vài phiên âm Wiktionary gõ dấu nhấn/trường âm bằng ký tự ASCII ' và :
-    return s.replace("ɹ", "r").replace("'", "ˈ").replace(":", "ː") if s else s
+    if not s:
+        return s
+    s = s.replace("ɹ", "r").replace("'", "ˈ").replace(":", "ː")
+    # Chỉ giữ một phiên âm âm vị (2026-11-07, lỗi thấy khi dùng dữ liệu cho các app edtechcorner):
+    # "/ˈsɪt.i/ [ˈsɪɾ.i]" → bỏ phần ngữ âm trong [ ]; "/ˈloɪn/ ~ /ˈlɔɪn/" → lấy cách đầu;
+    # ECDICT "ku'weiti, kə'waiti" đổi ra "/kuˈweitiˌ kəˈwaiti/" → lấy cách đầu.
+    s = s.split(" [")[0].split(" ~ ")[0]
+    s = re.split(r"ˌ\s+", s)[0].strip()
+    # ECDICT "/ˈsɔːriŋ ˈsɔər-/": phần sau là cách đọc dở (có gạch nối) → bỏ
+    parts = s.strip("/").split(" ")
+    while len(parts) > 1 and (parts[-1].startswith("-") or parts[-1].endswith("-")):
+        parts.pop()
+    s = ("/" if s.startswith("/") else "") + " ".join(parts) + ("/" if s.startswith("/") else "")
+    if s.startswith("/") and not s.endswith("/"):
+        s += "/"
+    s = re.sub("ˈ+", "ˈ", s)   # Wiktionary "/ˈˈd͡ʒuːəl/"
+    # Hai dấu nhấn chính ("/ˈkriˈeɪʃən/", ECDICT "/ˈautˈsaid/") là cách ghi trọng âm ngang nhau; từ điển người học ghi
+    # nhấn phụ cho các âm tiết trước và nhấn chính cho âm tiết cuối: /ˌkriˈeɪʃən/, /ˌautˈsaid/.
+    if s.count("ˈ") > 1:
+        last = s.rindex("ˈ")
+        s = s[:last].replace("ˈ", "ˌ") + s[last:]
+    return s
 
 
 def load_ranks():
@@ -329,6 +355,7 @@ def main():
             stats["entries_ai"] += 1
             for i, s in enumerate(a["senses"]):
                 sid += 1
+                s["guideword"] = GUIDEWORD_TYPO.get(s["guideword"], s["guideword"])
                 con.execute("INSERT INTO sense VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                             (sid, eid, "learner", i, s["guideword"] or None, s["grammar"] or None,
                              s["labels"] or None, s["definition"], s["cefr"], s["vi"], int(bool(s["vi_ok"])),

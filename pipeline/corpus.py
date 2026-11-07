@@ -88,6 +88,9 @@ QUANT = {"piece", "bit", "word", "item", "lot", "number", "couple", "deal", "amo
          "handful", "flash", "stroke", "gust", "burst", "fit", "round", "spell", "source", "lack", "wealth"}
 COLL_SKIP_LEMMA = {"not", "so", "very", "too", "also", "just", "then", "only", "even", "still", "there", "here",
                    "as", "how", "when", "why", "where", "more", "most", "be", "have", "do", "-PRON-"}
+# Ngoại lệ của COLL_SKIP_LEMMA cho mẫu V + N (2026-11-07): thiếu "do homework", "have a party", "have an impact"
+# là lỗ hổng lớn với người học (đo trên đề thi THPT, _deliverables/corpus-edtechcorner ở thư mục GitHub cha).
+LIGHT_VERBS = {"do", "have"}
 
 
 # ---------- đọc corpus ----------
@@ -300,6 +303,9 @@ def collocates(t):
         if t.dep_ == "compound" and h.pos_ == "NOUN" and ok(h):
             out.append(("N + N", f"{t.lemma_.lower()} {h.lemma_.lower()}", h.lemma_.lower()))
         if t.dep_ in ("dobj", "nsubjpass") and h.pos_ == "VERB" and ok(h):
+            out.append(("V + N", verb_phrase(h), h.lemma_.lower()))
+        elif t.dep_ == "dobj" and h.pos_ == "VERB" and h.lemma_.lower() in LIGHT_VERBS:
+            # do homework, have a party: do/have bị loại ở mọi mẫu khác (quá chung), chỉ giữ khi là động từ chính có tân ngữ
             out.append(("V + N", verb_phrase(h), h.lemma_.lower()))
         if t.dep_ == "nsubj" and h.pos_ == "VERB" and ok(h):
             out.append(("N + V", h.lemma_.lower(), h.lemma_.lower()))
