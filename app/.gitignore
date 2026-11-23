@@ -3,6 +3,7 @@ node_modules
 /build
 /build-web
 /build-android
+/build-ios
 /.svelte-kit
 /package
 .env

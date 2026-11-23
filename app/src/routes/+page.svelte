@@ -8,10 +8,10 @@
   import About from "$lib/About.svelte";
   import * as api from "$lib/api";
   import { cleanQuery, describeVia } from "$lib/api";
-  import { DESKTOP_DOWNLOAD, IS_ANDROID, IS_WEB, SITE_HOME, downloadText, loadAndroid, openExternalUrl, persistStorage, pickSavePath } from "$lib/platform";
+  import { DESKTOP_DOWNLOAD, IS_IOS, IS_NATIVE, IS_WEB, SITE_HOME, downloadText, loadNative, openExternalUrl, persistStorage, pickSavePath } from "$lib/platform";
   import { writeClipboard } from "$lib/copy";
   import { initAnalytics } from "$lib/analytics";
-  import { setOnlineVoices, speak, speakAndroid, type Accent } from "$lib/speech";
+  import { setOnlineVoices, speak, speakNative, type Accent } from "$lib/speech";
   import { APP_NAME, dateLocale, t, tErr, ui, type UiLang } from "$lib/i18n.svelte";
   import type { DbStatus, EnEntry, HistoryRow, ListInfo, ListItem, LookupView, Mode, Source, Suggestion, Via, ViEntry } from "$lib/types";
 
@@ -134,13 +134,13 @@
     applyLook();
     window.speechSynthesis?.getVoices(); // nạp sẵn danh sách giọng
     // app Android: ô tra giữ con trỏ thì bàn phím tự bật lại mỗi lần quay về app, che thanh dưới
-    if (!IS_ANDROID) inputEl?.focus();
+    if (!IS_NATIVE) inputEl?.focus();
   });
 
   /** Bản web: tham số ?lang=&theme= (UC-W04), địa chỉ "#" (UC-W03), nút "Tra" khi chọn từ trên màn hình cảm ứng (UC-W02). */
   function webInit() {
     initAnalytics(); // UC-W15: chỉ đếm lượt mở trang, không gửi phần "#…" (không chạy trong app Android)
-    if (IS_ANDROID) androidInit();
+    if (IS_NATIVE) nativeInit();
     const p = new URLSearchParams(location.search);
     const lang = p.get("lang");
     const th = p.get("theme");
@@ -167,27 +167,27 @@
   /** Nút Back/cử chỉ vuốt lùi (UC-A02): đóng hộp thoại/ngăn kéo trước, rồi lùi trong lịch sử của app.
    *  Ở màn gốc thì handler TẮT để Android tự xử lý (thoát app, có hoạt ảnh predictive back) — PLAN-android mục 7. */
   const canBack = $derived(!!copyManual || sideOpen || fromOtherApp || navIdx > 0);
-  function onAndroidBack() {
+  function onNativeBack() {
     if (copyManual) copyManual = "";
     else if (sideOpen) sideOpen = false;
     else if (fromOtherApp) {
       fromOtherApp = false;
-      loadAndroid().then((a) => a.minimizeApp());
+      loadNative().then((a) => a.minimizeApp());
     } else if (navIdx > 0) history.back();
   }
   $effect(() => {
-    if (!IS_ANDROID) return;
+    if (!IS_NATIVE) return;
     const on = canBack;
-    loadAndroid().then((a) => a.setBackEnabled(on));
+    loadNative().then((a) => a.setBackEnabled(on));
   });
   $effect(() => {
-    if (!IS_ANDROID) return;
+    if (!IS_NATIVE) return;
     const dark = theme === "dark" || (theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
-    loadAndroid().then((a) => a.setBarsStyle(dark));
+    loadNative().then((a) => a.setBarsStyle(dark));
   });
-  async function androidInit() {
-    const a = await loadAndroid();
-    await a.initBack(onAndroidBack);
+  async function nativeInit() {
+    const a = await loadNative();
+    await a.initBack(onNativeBack);
     // liên kết ra ngoài (target=_blank, http/https khác nguồn của app) → trình duyệt của máy (UC-A07)
     document.addEventListener("click", (e) => {
       const el = (e.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
@@ -240,7 +240,7 @@
   /** UC-A06: chia sẻ link bản web của mục đang xem (người nhận không cần cài app). */
   async function shareCurrent(hash: string, label: string) {
     try {
-      const a = await loadAndroid();
+      const a = await loadNative();
       if (!(await a.shareLink(`https://dictionary.edtechcorner.com/${hash}`, label))) say(t("sharedNot"));
     } catch (e) {
       say(tErr(e), 8000);
@@ -436,8 +436,8 @@
       const r = await api.exportCsvText(id);
       const file = await api.defaultExportPath(name);
       const body = "\ufeff" + r.text + "\r\n";
-      if (IS_ANDROID) {
-        const ok = await (await loadAndroid()).shareFile(file, body, file);
+      if (IS_NATIVE) {
+        const ok = await (await loadNative()).shareFile(file, body, file);
         return say(ok ? t("exportedAndroid", { n: r.rows, name: file }) : t("sharedNot"), 7000);
       }
       if (downloadText(file, body, "text/csv;charset=utf-8")) return say(t("exportedWeb", { n: r.rows, name: file }), 7000);
@@ -460,8 +460,8 @@
       const d = new Date(b.exported_at * 1000);
       const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
       const file = `ecdict-backup-${ymd}.json`;
-      if (IS_ANDROID) {
-        if (!(await (await loadAndroid()).shareFile(file, JSON.stringify(b, null, 1), file))) return say(t("sharedNot"));
+      if (IS_NATIVE) {
+        if (!(await (await loadNative()).shareFile(file, JSON.stringify(b, null, 1), file))) return say(t("sharedNot"));
         if (banner === t("backupReminder", { n: listInfos.reduce((a, l) => a + l.count, 0) })) banner = "";
         return say(t("backedUpAndroid", { name: file }), 8000);
       }
@@ -563,7 +563,7 @@
     sideOpen = false;
     fromOtherApp = false;
     pick = "";
-    if (IS_ANDROID) inputEl?.blur();
+    if (IS_NATIVE) inputEl?.blur();
     const key = raw.startsWith("vi:") ? `vi:${q}` : q;
     lastLookup = key;
     const seq = ++goSeq;
@@ -699,10 +699,10 @@
   }
 
   async function onSpeak(text: string, a: Accent) {
-    if (IS_ANDROID) {
+    if (IS_NATIVE) {
       // UC-A03: TextToSpeech của Android; thiếu giọng → nút mở cài đặt giọng nói
-      const r = await speakAndroid(text, a);
-      if (r.note) say(r.note, r.install ? 12000 : 4500, r.install ? { label: t("voiceInstall"), run: () => loadAndroid().then((m) => m.ttsOpenInstall()) } : null);
+      const r = await speakNative(text, a);
+      if (r.note) say(r.note, r.install ? 12000 : 4500, r.install ? { label: t("voiceInstall"), run: () => loadNative().then((m) => m.ttsOpenInstall()) } : null);
       return;
     }
     const note = speak(text, a);
@@ -733,7 +733,7 @@
 <svelte:head><title>{APP_NAME}</title></svelte:head>
 <svelte:window onkeydown={onGlobalKey} />
 
-<div class="app" class:android={IS_ANDROID} style:--bnav-h={IS_ANDROID ? `${bnavH}px` : undefined}>
+<div class="app" class:native={IS_NATIVE} class:ios={IS_IOS} style:--bnav-h={IS_NATIVE ? `${bnavH}px` : undefined}>
   <header class="topbar">
     <button class="icon-btn menu-btn" onclick={() => (sideOpen = !sideOpen)} title={t("menu")} aria-label={t("menu")} aria-expanded={sideOpen}><Icon name="history" /></button>
     <div class="brand">
@@ -743,7 +743,7 @@
 
     <div class="nav">
       <button class="icon-btn" disabled={IS_WEB ? navIdx === 0 : !back.length} onclick={goBack} title={t("back")}><Icon name="back" /></button>
-      <button class="icon-btn" disabled={IS_WEB ? navIdx >= navMax : !fwd.length} onclick={goFwd} title={t("forward")}><Icon name="forward" /></button>
+      <button class="icon-btn fwd-btn" disabled={IS_WEB ? navIdx >= navMax : !fwd.length} onclick={goFwd} title={t("forward")}><Icon name="forward" /></button>
     </div>
 
     <div class="search">
@@ -816,13 +816,13 @@
     </button>
     {#if IS_WEB}
       <!-- bản web (UC-W09): tải bản Windows dùng offline, về trang Edtech Corner — mở tab mới -->
-      {#if !IS_ANDROID}
+      {#if !IS_NATIVE}
         <a class="icon-btn" href="#/about/download" onclick={openDownload} title={t("downloadDesktop")} aria-label={t("downloadDesktop")}>
           <Icon name="download" /><span class="wide-label">{t("offlineShort")}</span>
         </a>
       {/if}
       <!-- app Android: không có liên kết về trang chủ Edtech Corner (người thử bấm nhầm, tưởng app mở trình duyệt; người dùng bỏ 2026-11-05) -->
-      {#if !IS_ANDROID}
+      {#if !IS_NATIVE}
         <a class="icon-btn site-btn" href={SITE_HOME} target="_blank" rel="noopener" title={t("goSite")} aria-label={t("goSite")}>
           <Icon name="home" /><span class="wide-label">EdTech Corner</span>
         </a>
@@ -899,11 +899,11 @@
       {/if}
       {#if !status}
         <p class="muted">{t("opening")}</p>
-      {:else if !status.ok && IS_ANDROID}
+      {:else if !status.ok && IS_NATIVE}
         <section class="recover">
           <h1>{t("androidDataBadTitle")}</h1>
           <p>{tErr(status.error)}</p>
-          <p>{t("androidDataBadHelp")}</p>
+          <p>{t(IS_IOS ? "iosDataBadHelp" : "androidDataBadHelp")}</p>
         </section>
       {:else if !status.ok && IS_WEB}
         <section class="recover">
@@ -952,7 +952,7 @@
             {/each}
           </div>
           {#if IS_WEB}
-            {#if !IS_ANDROID}<p class="desktop-dl"><a href="#/about/download" onclick={openDownload}>{t("downloadDesktop")}</a></p>{/if}
+            {#if !IS_NATIVE}<p class="desktop-dl"><a href="#/about/download" onclick={openDownload}>{t("downloadDesktop")}</a></p>{/if}
           {/if}
         </section>
       {:else if screen.kind === "entry"}
@@ -975,7 +975,7 @@
             onToggleVi={toggleVi}
             {onCopy}
             loadUsage={api.getUsage}
-            onShare={IS_ANDROID ? () => shareCurrent(`#/en/${enc(enWord)}`, enWord) : undefined}
+            onShare={IS_NATIVE ? () => shareCurrent(`#/en/${enc(enWord)}`, enWord) : undefined}
           />
         {/key}
       {:else if screen.kind === "vi"}
@@ -990,7 +990,7 @@
             entry={screen.entry}
             onLookup={(w) => go(w)}
             {onSpeak}
-            onShare={IS_ANDROID ? () => shareCurrent(`#/vi/${enc(viWord)}`, viWord) : undefined}
+            onShare={IS_NATIVE ? () => shareCurrent(`#/vi/${enc(viWord)}`, viWord) : undefined}
           />
         {/key}
       {:else if screen.kind === "choice"}
@@ -1055,7 +1055,7 @@
               <button class="test" onclick={() => onSpeak("The weather is lovely today.", accent)}>{t("tryVoice")}</button>
             </div>
           </div>
-          {#if IS_WEB && !IS_ANDROID}
+          {#if IS_WEB && !IS_NATIVE}
             <div class="row top">
               <div class="lab">{t("setOnlineVoices")}</div>
               <div class="ctl paths">
@@ -1074,12 +1074,12 @@
           <div class="row top">
             <div class="lab">{t("setData")}</div>
             <div class="ctl paths">
-              <div>{t("dataDict")} <code>{status.path}</code> ({t("dataVersion", { v: status.meta.data_version })})</div>
+              <div>{t("dataDict")} {#if IS_NATIVE}{t("dataDictApp")}{:else}<code>{status.path}</code>{/if} ({t("dataVersion", { v: status.meta.data_version })})</div>
               {#if IS_WEB}
-                <div>{t("dataUser")} {status.user_path === "indexeddb" ? t("webStore_indexeddb") : t("webStore_memory")}</div>
-                <div class="muted">{t("dataNoteWeb")}</div>
+                <div>{t("dataUser")} {status.user_path !== "indexeddb" ? t("webStore_memory") : IS_NATIVE ? t("appStore_indexeddb") : t("webStore_indexeddb")}</div>
+                <div class="muted">{t(IS_NATIVE ? "dataNoteApp" : "dataNoteWeb")}</div>
                 <div class="data-btns">
-                  <button onclick={backupData}>{t(IS_ANDROID ? "backupBtnAndroid" : "backupBtn")}</button>
+                  <button onclick={backupData}>{t(IS_NATIVE ? "backupBtnAndroid" : "backupBtn")}</button>
                   <button onclick={() => restoreInput?.click()}>{t("restoreBtn")}</button>
                   <input bind:this={restoreInput} type="file" accept=".json,application/json" hidden onchange={restoreData} />
                   <button class="danger" onclick={clearAllData}>{t("clearAllBtn")}</button>
@@ -1101,13 +1101,13 @@
       {#if IS_WEB}
         <footer class="site-foot">
           {t("footData")} · <button class="k" onclick={() => showSources()}>{t("footAbout")}</button>
-          {#if !IS_ANDROID}· <a href={SITE_HOME} target="_blank" rel="noopener">EdTech Corner</a>{/if}
+          {#if !IS_NATIVE}· <a href={SITE_HOME} target="_blank" rel="noopener">EdTech Corner</a>{/if}
         </footer>
       {/if}
     </div>
   </main>
 
-  {#if IS_ANDROID}
+  {#if IS_NATIVE}
     <nav class="bnav" class:hide={kbdOpen} aria-label={t("menu")} bind:clientHeight={bnavH}>
       <button class:on={bnavOn === "lookup"} aria-current={bnavOn === "lookup" ? "page" : undefined} aria-label={t("navLookup")} onclick={bnavLookup}><Icon name="search" /><span>{t("navLookup")}</span></button>
       <button class:on={bnavOn === "history"} aria-current={bnavOn === "history" ? "page" : undefined} aria-label={t("tabHistory")} onclick={() => bnavPanel("history")}><Icon name="history" /><span>{t("tabHistory")}</span></button>
@@ -1858,26 +1858,26 @@
     }
     /* app Android trên điện thoại (UC-A10): thanh dưới thay nút lịch sử, Cài đặt ở đầu trang; Lịch sử và Danh sách chiếm cả
        vùng nội dung thay vì ngăn kéo. Cùng một ô lưới với .main nên không cần biết chiều cao thanh dưới. */
-    .app.android {
+    .app.native {
       grid-template-rows: auto 1fr auto;
     }
-    .app.android .menu-btn,
-    .app.android .theme,
-    .app.android .palette,
-    .app.android .site-btn,
-    .app.android .settings-btn,
-    .app.android .side-bg,
-    .app.android .side .tabs {
+    .app.native .menu-btn,
+    .app.native .theme,
+    .app.native .palette,
+    .app.native .site-btn,
+    .app.native .settings-btn,
+    .app.native .side-bg,
+    .app.native .side .tabs {
       display: none;
     }
-    .app.android .brand {
+    .app.native .brand {
       flex: 1;
     }
-    .app.android .main {
+    .app.native .main {
       grid-row: 2;
       grid-column: 1;
     }
-    .app.android .side {
+    .app.native .side {
       position: relative;
       grid-row: 2;
       grid-column: 1;
@@ -1894,7 +1894,7 @@
       box-shadow: none;
       border-right: 0;
     }
-    .app.android .side.open {
+    .app.native .side.open {
       display: flex;
     }
     .bnav {
@@ -1931,8 +1931,8 @@
       color: var(--accent);
       font-weight: 600;
     }
-    .app.android .toast,
-    .app.android .pick {
+    .app.native .toast,
+    .app.native .pick {
       bottom: calc(18px + max(var(--bnav-h), env(safe-area-inset-bottom)));
     }
   }
@@ -1961,6 +1961,14 @@
     }
     .nav,
     .icon-btn.palette {
+      display: none;
+    }
+    /* app iOS (UC-I02): không có nút Back hệ thống → giữ nút lùi, đặt trước logo; nút tiến bỏ cho gọn */
+    .app.ios .nav {
+      display: flex;
+      order: -1;
+    }
+    .app.ios .fwd-btn {
       display: none;
     }
     .brand {

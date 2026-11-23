@@ -13,16 +13,20 @@ export default defineConfig(({ mode }) => {
   // Bản Android (Capacitor, PLAN-android): `npm run build:android` (= --mode android) — cùng code chạy của bản web
   // (VITE_TARGET "web": Worker + IndexedDB), cộng cờ VITE_ANDROID cho phần khác biệt (không GA, giọng đọc gốc, nút Back…).
   // Không đặt gì → bản desktop như cũ. svelte.config.js đọc process.env.VITE_TARGET / VITE_ANDROID để chọn thư mục ra + CSP.
+  // Bản iOS (Capacitor, PLAN-ios): `npm run build:ios` (= --mode ios) — như Android, cờ VITE_IOS cho phần gốc iOS.
   const android = mode === "android" || process.env.VITE_ANDROID === "1";
-  const target = android || mode === "web" || process.env.VITE_TARGET === "web" ? "web" : "desktop";
+  const ios = !android && (mode === "ios" || process.env.VITE_IOS === "1");
+  const target = android || ios || mode === "web" || process.env.VITE_TARGET === "web" ? "web" : "desktop";
   process.env.VITE_TARGET = target;
   process.env.VITE_ANDROID = android ? "1" : "";
+  process.env.VITE_IOS = ios ? "1" : "";
   return {
   plugins: [sveltekit()],
   // hằng số lúc build: nhánh không dùng bị loại khỏi bundle (bản web không có plugin Tauri, bản desktop không có Worker)
   define: {
     "import.meta.env.VITE_TARGET": JSON.stringify(target),
     "import.meta.env.VITE_ANDROID": JSON.stringify(android),
+    "import.meta.env.VITE_IOS": JSON.stringify(ios),
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(pkg.version),
   },
   worker: { format: "es" },

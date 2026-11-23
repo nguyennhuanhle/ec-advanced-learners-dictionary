@@ -4,7 +4,7 @@
   import { APP_NAME, t, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { DESKTOP_DOWNLOAD, DESKTOP_RELEASES, DMG_SIZE, IS_ANDROID, IS_WEB, SETUP_SIZE, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
+  import { DESKTOP_DOWNLOAD, DESKTOP_RELEASES, DMG_SIZE, IS_ANDROID, IS_IOS, IS_NATIVE, IS_WEB, SETUP_SIZE, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
   import Icon from "./Icon.svelte";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
@@ -242,6 +242,24 @@
         "Svelte and SvelteKit (MIT)",
         "Android System WebView (Google, Android terms)",
       ],
+      // app iOS (UC-I07)
+      ipaIos: [
+        "IPA comes from Wiktionary: UK = Received Pronunciation, US = General American. If Wiktionary has no UK transcription, the one from ECDICT is converted to IPA and shown as UK (ECDICT transcriptions are British-style, so they are never shown as US).",
+        "Audio uses the voices built into your iPhone or iPad (Settings › Accessibility › Spoken Content › Voices); the dictionary has no audio recordings.",
+      ],
+      iosPrivacyTitle: "Privacy (iOS app)",
+      iosPrivacy: [
+        "The whole dictionary is inside the app: looking up words needs no internet connection, and the app does not connect to the internet by itself.",
+        "No account, no advertising, no analytics, no tracking. The app does not collect or share any data.",
+        "Your history, word lists and settings are stored only inside the app on this device. Deleting the app deletes them — use Settings › Backup to keep a copy.",
+        "Read-aloud uses the voices built into your device.",
+        "Links to websites (edtechcorner.com, data sources, licences) open in Safari.",
+      ],
+      swIos: [
+        "Capacitor and its plugins (MIT)",
+        "Svelte and SvelteKit (MIT)",
+        "WebKit (Apple)",
+      ],
     },
     vi: {
       tagline: "Anh–Anh · Anh–Việt · Việt–Anh",
@@ -465,6 +483,23 @@
         "Svelte và SvelteKit (MIT)",
         "Android System WebView (Google, điều khoản Android)",
       ],
+      ipaIos: [
+        "Phiên âm IPA lấy từ Wiktionary: UK theo giọng chuẩn Anh (RP), US theo giọng Mỹ phổ thông (GA). Khi Wiktionary không có phiên âm UK thì dùng phiên âm của ECDICT, đổi sang ký hiệu IPA và chỉ ghi là UK (phiên âm ECDICT theo kiểu Anh nên không bao giờ ghi là US).",
+        "Âm thanh dùng giọng đọc có sẵn trên iPhone, iPad (Cài đặt › Trợ năng › Nội dung được đọc › Giọng nói); từ điển không có file ghi âm.",
+      ],
+      iosPrivacyTitle: "Quyền riêng tư (app iOS)",
+      iosPrivacy: [
+        "Toàn bộ từ điển nằm sẵn trong app: tra từ không cần mạng, và app không tự kết nối Internet.",
+        "Không tài khoản, không quảng cáo, không thống kê, không theo dõi. App không thu thập và không chia sẻ dữ liệu nào.",
+        "Lịch sử, danh sách từ và cài đặt chỉ lưu trong app trên máy này. Xoá app là mất — hãy dùng Cài đặt › Sao lưu để giữ một bản.",
+        "Đọc to dùng giọng đọc có sẵn trên máy.",
+        "Liên kết tới trang web (edtechcorner.com, nguồn dữ liệu, giấy phép) mở bằng Safari.",
+      ],
+      swIos: [
+        "Capacitor và các plugin (MIT)",
+        "Svelte và SvelteKit (MIT)",
+        "WebKit (Apple)",
+      ],
     },
   };
 
@@ -496,7 +531,7 @@
   }
   const jump = (i: number) => sectionEls[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
   // Thẻ tải bản cài (UC-W09, 2026-10-23): chỉ bản web trên máy tính; neo #/about/download.
-  const SHOW_DL = IS_WEB && !IS_ANDROID;
+  const SHOW_DL = IS_WEB && !IS_NATIVE;
   const MAC_APP = "/Applications/EC Advanced Learners’ Dictionary.app";
   let dlEl: HTMLElement | undefined = $state();
   const jumpDl = () => dlEl?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -515,13 +550,13 @@
       </div>
     </div>
   </header>
-  {#if IS_WEB && !IS_ANDROID}
+  {#if IS_WEB && !IS_NATIVE}
     <div class="hero-links">
       {#if SHOW_DL}<button class="btn primary" onclick={jumpDl}><Icon name="download" size={16} /> {t("downloadDesktop")}</button>{/if}
       <a class="btn" href={SITE_HOME} target="_blank" rel="noopener"><Icon name="home" size={16} /> {t("goSite")}</a>
     </div>
   {/if}
-  <p class="intro">{IS_ANDROID ? c.introAndroid : IS_WEB ? c.introWeb : c.intro}</p>
+  <p class="intro">{IS_NATIVE ? c.introAndroid : IS_WEB ? c.introWeb : c.intro}</p>
 
   <nav class="toc">
     {#if SHOW_DL}<button onclick={jumpDl}>{c.dl.nav}</button>{/if}
@@ -582,7 +617,7 @@
     {#each c.cards as card (card.id)}
       <article class="card how" class:wide={card.id === "ai"}>
         <h3>{card.title}{#if card.id === "ai"} <Badge kind="ai" text="AI" />{/if}</h3>
-        {#each IS_WEB && card.id === "ipa" ? (IS_ANDROID ? c.ipaAndroid : c.ipaWeb) : card.body as p}<p>{p}</p>{/each}
+        {#each IS_WEB && card.id === "ipa" ? (IS_IOS ? c.ipaIos : IS_ANDROID ? c.ipaAndroid : c.ipaWeb) : card.body as p}<p>{p}</p>{/each}
         <div class="from"><span>{c.from}:</span> {card.from}</div>
       </article>
     {/each}
@@ -618,12 +653,12 @@
   </div>
   <div class="card lic">
     <h3>{c.swTitle}</h3>
-    <ul>{#each IS_ANDROID ? c.swAndroid : c.sw as x}<li>{x}</li>{/each}</ul>
+    <ul>{#each IS_IOS ? c.swIos : IS_ANDROID ? c.swAndroid : c.sw as x}<li>{x}</li>{/each}</ul>
   </div>
-  {#if IS_ANDROID}
+  {#if IS_NATIVE}
     <div class="card lic">
-      <h3>{c.androidPrivacyTitle}</h3>
-      <ul>{#each c.androidPrivacy as x}<li>{x}</li>{/each}</ul>
+      <h3>{IS_IOS ? c.iosPrivacyTitle : c.androidPrivacyTitle}</h3>
+      <ul>{#each IS_IOS ? c.iosPrivacy : c.androidPrivacy as x}<li>{x}</li>{/each}</ul>
       <p class="dl"><a href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener">{t("downloadDesktop")}</a></p>
     </div>
   {:else if IS_WEB}

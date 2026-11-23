@@ -31,3 +31,10 @@ PLAN-colloc.md
 *.keystore
 keystore.properties
 app/android/app/src/main/assets/public/
+
+# iOS: ghi chú nội bộ, dữ liệu chép lúc dựng, chứng chỉ/khoá ký — KHÔNG commit
+PLAN-ios.md
+app/ios/App/App/public/
+*.p12
+*.mobileprovision
+AuthKey_*.p8

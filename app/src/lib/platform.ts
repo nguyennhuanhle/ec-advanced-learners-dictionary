@@ -8,6 +8,12 @@ export const IS_WEB = import.meta.env.VITE_TARGET === "web";
 /** App Android (Capacitor, PLAN-android). Luôn kèm IS_WEB; dùng cho phần khác bản web (không GA, giọng đọc gốc, nút Back…). */
 export const IS_ANDROID = import.meta.env.VITE_ANDROID === true;
 
+/** App iOS (Capacitor, PLAN-ios). Luôn kèm IS_WEB. */
+export const IS_IOS = import.meta.env.VITE_IOS === true;
+
+/** App cài từ kho (Android hoặc iOS): không GA, dữ liệu trong app, thanh điều hướng dưới, chia sẻ bằng bảng chia sẻ của máy… */
+export const IS_NATIVE = IS_ANDROID || IS_IOS;
+
 /** Đang chạy trong cửa sổ Tauri (desktop). Bản web luôn false. */
 export const inTauri =
   import.meta.env.VITE_TARGET !== "web" && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -22,17 +28,20 @@ export async function pickSavePath(suggested: string): Promise<string | null> {
   return suggested;
 }
 
-/** Phần gốc Android (lib/android.ts). Chỉ gọi khi IS_ANDROID; nhánh này bị loại khỏi bản web/desktop lúc build. */
-export function loadAndroid(): Promise<typeof import("./android")> {
+/** Phần gốc của app (lib/android.ts hoặc lib/ios.ts — cùng bộ hàm). Chỉ gọi khi IS_NATIVE; nhánh này bị loại khỏi
+ *  bản web/desktop lúc build, và bản Android không mang ios.ts (ngược lại cũng vậy). */
+export type NativeModule = typeof import("./android");
+export function loadNative(): Promise<NativeModule> {
   if (import.meta.env.VITE_ANDROID) return import("./android");
-  return Promise.reject(new Error("not android"));
+  if (import.meta.env.VITE_IOS) return import("./ios");
+  return Promise.reject(new Error("not a native app"));
 }
 
 /** Mở liên kết ngoài: desktop mở bằng trình duyệt mặc định (cửa sổ app không tự điều hướng); web mở tab mới;
  *  Android mở bằng trình duyệt của máy (app không có quyền INTERNET). */
 export async function openExternalUrl(url: string): Promise<void> {
-  if (import.meta.env.VITE_ANDROID) {
-    await (await import("./android")).openExternal(url);
+  if (import.meta.env.VITE_ANDROID || import.meta.env.VITE_IOS) {
+    await (await loadNative()).openExternal(url);
     return;
   }
   if (import.meta.env.VITE_TARGET !== "web" && inTauri) {
@@ -46,8 +55,8 @@ export async function openExternalUrl(url: string): Promise<void> {
 /** Ghi clipboard có định dạng bằng plugin của Tauri (giữ HTML khi dán vào Word). Trả false khi không phải desktop.
  *  Android: clipboard của hệ thống (chữ thường — WebView không chắc cho Clipboard API). */
 export async function writeHtmlNative(html: string, text: string): Promise<boolean> {
-  if (import.meta.env.VITE_ANDROID) {
-    await (await import("./android")).copyText(text);
+  if (import.meta.env.VITE_ANDROID || import.meta.env.VITE_IOS) {
+    await (await loadNative()).copyText(text);
     return true;
   }
   if (import.meta.env.VITE_TARGET !== "web" && inTauri) {

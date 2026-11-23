@@ -4,7 +4,7 @@
 // của hãng) mặc định bật, người dùng tắt được trong Cài đặt (setOnlineVoices) — tắt rồi thì chỉ dùng giọng trên máy.
 
 import { t } from "./i18n.svelte";
-import { IS_WEB, devicePlatform, loadAndroid } from "./platform";
+import { IS_IOS, IS_WEB, devicePlatform, loadNative } from "./platform";
 
 export type Accent = "uk" | "us" | "vi";
 
@@ -60,13 +60,18 @@ export function pickVoice(accent: Accent): { voice: SpeechSynthesisVoice | null;
 }
 
 /** App Android (UC-A03): WebView không có speechSynthesis → TextToSpeech của Android.
+ *  App iOS (UC-I03): AVSpeechSynthesizer qua cùng plugin; iOS không cho mở thẳng trang cài giọng → không có nút, lời nhắn chỉ đường.
  *  Trả lời nhắn cần hiện (hoặc null) và có cần nút "mở cài đặt giọng nói" không. */
-export async function speakAndroid(text: string, accent: Accent): Promise<{ note: string | null; install: boolean }> {
-  const { ttsSpeak } = await loadAndroid();
+export async function speakNative(text: string, accent: Accent): Promise<{ note: string | null; install: boolean }> {
+  const { ttsSpeak } = await loadNative();
   const lang = accent === "uk" ? "en-GB" : accent === "us" ? "en-US" : "vi-VN";
   try {
     const r = await ttsSpeak(text, lang);
     if (r === "ok") return { note: null, install: false };
+    if (IS_IOS) {
+      if (r === "fallback-us") return { note: t("voiceUkFallbackIos"), install: false };
+      return { note: t(accent === "vi" ? "voiceNoViIos" : "voiceNoEnIos"), install: false };
+    }
     if (r === "fallback-us") return { note: t("voiceUkFallbackAndroid"), install: true };
     if (r === "no-engine") return { note: t("voiceNoEngineAndroid"), install: true };
     return { note: t(accent === "vi" ? "voiceNoViAndroid" : "voiceNoEnAndroid"), install: true };

@@ -14,11 +14,14 @@ const WEB = process.env.VITE_TARGET === "web";
 // Bản Android (Capacitor): cùng code web, ra build-android/ (webDir của capacitor.config.ts), CSP chỉ nguồn của app —
 // không Google Analytics, không nguồn ngoài nào (UC-A "Không thể"; bản release còn bỏ cả quyền INTERNET).
 const ANDROID = process.env.VITE_ANDROID === "1";
-const GA_SCRIPT = ANDROID ? [] : ["https://www.googletagmanager.com"];
-const GA_CONNECT = ANDROID
+// Bản iOS (Capacitor, PLAN-ios): như Android, ra build-ios/.
+const IOS = process.env.VITE_IOS === "1";
+const NATIVE = ANDROID || IOS;
+const GA_SCRIPT = NATIVE ? [] : ["https://www.googletagmanager.com"];
+const GA_CONNECT = NATIVE
   ? []
   : ["https://*.google-analytics.com", "https://*.analytics.google.com", "https://*.googletagmanager.com"];
-const GA_IMG = ANDROID ? [] : ["https://*.google-analytics.com", "https://*.googletagmanager.com"];
+const GA_IMG = NATIVE ? [] : ["https://*.google-analytics.com", "https://*.googletagmanager.com"];
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -27,6 +30,8 @@ const config = {
     ? {
         adapter: ANDROID
           ? adapter({ pages: "build-android", assets: "build-android", fallback: "index.html" })
+          : IOS
+          ? adapter({ pages: "build-ios", assets: "build-ios", fallback: "index.html" })
           : adapter({ pages: "build-web", assets: "build-web", fallback: "index.html" }),
         csp: {
           mode: "hash",
