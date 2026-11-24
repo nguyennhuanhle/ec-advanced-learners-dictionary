@@ -1885,7 +1885,7 @@
       left: auto;
       bottom: auto;
       width: auto;
-      z-index: 1;
+      z-index: 6; /* trên ô "In this entry…" dính đầu trang của mục từ (Entry .toc-select, z-index 5), dưới gợi ý tra (20) */
       display: none;
       padding-top: 0;
       padding-bottom: 0;
@@ -2051,5 +2051,11 @@
     .bnav button span {
       display: none;
     }
+  }
+  /* app iOS: chạm vào ô nhập/ô chọn có chữ < 16px thì iOS phóng to cả trang và không tự thu lại → giữ tối thiểu 16px */
+  .app.ios :global(input:not([type="checkbox"]):not([type="radio"]):not([type="range"])),
+  .app.ios :global(select),
+  .app.ios :global(textarea) {
+    font-size: max(16px, 1em);
   }
 </style>

@@ -5,7 +5,8 @@ Dùng:
   python3 pipeline/build_ios.py --sync-only   # dựng giao diện + chép dữ liệu + `cap sync ios` (mở Xcode: app/ios/App/App.xcodeproj)
   python3 pipeline/build_ios.py               # như trên + build cho iOS Simulator → in đường dẫn .app và kích thước
   python3 pipeline/build_ios.py --bump        # tăng số build (CURRENT_PROJECT_VERSION) trước khi dựng
-  (bản ký để tải lên App Store Connect: vòng I4, chưa làm)
+  python3 pipeline/build_ios.py --archive --unsigned   # bản Release máy thật không ký: kiểm build + đo gói tải
+  python3 pipeline/build_ios.py --archive --bump       # bản Release ký tự động → app/ios/archives/ → tải lên bằng Xcode Organizer
 
 Quy tắc (như build_android.py):
   - origin của WebView (hostname "localhost", iosScheme "capacitor") không được đổi — IndexedDB của người dùng gắn với nó;
@@ -30,6 +31,7 @@ PBXPROJ = IOS / "App.xcodeproj" / "project.pbxproj"
 DATA = ROOT / "data" / "build" / "web"
 CAP_CONFIG = APP / "capacitor.config.ts"
 DERIVED = APP / "ios" / "DerivedData"  # đã .gitignore (app/ios/.gitignore)
+ARCHIVES = APP / "ios" / "archives"  # đã .gitignore (.gitignore gốc)
 
 
 def stop(msg):
@@ -85,10 +87,35 @@ def dir_size(p):
     return sum(f.stat().st_size for f in p.rglob("*") if f.is_file())
 
 
+def archive(signed):
+    """Bản Release cho máy thật. Ký tự động bằng tài khoản đang đăng nhập trong Xcode (team DN752FWNK7) — cần quyền
+    Certificates, Identifiers & Profiles hoặc Cloud Managed Distribution Certificate. --unsigned: chỉ kiểm build + đo gói tải."""
+    out = ARCHIVES / f"App-{versions()[0]}-{versions()[1]}{'' if signed else '-unsigned'}.xcarchive"
+    if out.exists():
+        shutil.rmtree(out)
+    print(f"3/3 xcodebuild archive ({'ký tự động' if signed else 'không ký'})")
+    cmd = ["xcodebuild", "-project", "App.xcodeproj", "-scheme", "App", "-configuration", "Release",
+           "-destination", "generic/platform=iOS", "-derivedDataPath", DERIVED, "-archivePath", out, "-quiet", "archive"]
+    cmd += ["-allowProvisioningUpdates"] if signed else ["CODE_SIGNING_ALLOWED=NO", "CODE_SIGNING_REQUIRED=NO", "CODE_SIGN_IDENTITY="]
+    run(cmd, IOS)
+    app = out / "Products" / "Applications" / "App.app"
+    # gói tải ước lượng: App Store nén .ipa bằng zip; nén thử thư mục .app để biết có vượt 200 MB (iPhone hỏi trước khi tải qua 4G)
+    zipped = ARCHIVES / "size-check.zip"
+    zipped.unlink(missing_ok=True)
+    subprocess.run(["ditto", "-c", "-k", "--keepParent", str(app), str(zipped)], check=True)
+    print(f"Archive: {out}")
+    print(f"  App.app {dir_size(app) / 2**20:.1f} MiB trên đĩa, nén zip ~{zipped.stat().st_size / 2**20:.1f} MiB (ước lượng gói tải)")
+    zipped.unlink()
+    if signed:
+        print("Tải lên: mở Xcode › Window › Organizer › chọn archive › Distribute App › App Store Connect")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sync-only", action="store_true", help="không chạy xcodebuild")
     ap.add_argument("--bump", action="store_true", help="tăng số build trước khi dựng")
+    ap.add_argument("--archive", action="store_true", help="bản Release cho máy thật (.xcarchive) thay vì bản Simulator")
+    ap.add_argument("--unsigned", action="store_true", help="với --archive: không ký, chỉ để kiểm build và đo dung lượng")
     a = ap.parse_args()
 
     if sys.platform != "darwin":
@@ -127,6 +154,10 @@ def main():
         stop("cap sync không chép dữ liệu vào app/ios/App/App/public/data — kiểm CAP_WEBDIR")
     if a.sync_only:
         print("Xong (--sync-only). Mở bằng Xcode: open app/ios/App/App.xcodeproj")
+        return
+
+    if a.archive:
+        archive(signed=not a.unsigned)
         return
 
     print("3/3 xcodebuild (iOS Simulator)")

@@ -38,3 +38,4 @@ app/ios/App/App/public/
 *.p12
 *.mobileprovision
 AuthKey_*.p8
+app/ios/archives/
