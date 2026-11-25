@@ -4,7 +4,7 @@
   import { APP_NAME, t, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { DESKTOP_DOWNLOAD, DESKTOP_RELEASES, DMG_SIZE, IS_ANDROID, IS_IOS, IS_NATIVE, IS_WEB, SETUP_SIZE, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
+  import { APP_STORE_URL, DESKTOP_DOWNLOAD, DESKTOP_RELEASES, DMG_SIZE, IS_ANDROID, IS_IOS, IS_NATIVE, IS_WEB, SETUP_SIZE, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
   import Icon from "./Icon.svelte";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
@@ -13,7 +13,10 @@
   const AUTHOR_VI = "Lê Nguyễn Như Anh";
   const CONTACT = "https://edtechcorner.com/contact";
   const YEAR = "2026";
-  const onMac = devicePlatform() === "mac";
+  // cột của máy đang dùng đứng đầu và là nút chính (UC-W09, UC-I13): iPhone/iPad → App Store, Mac → .dmg, còn lại → Windows
+  const plat = devicePlatform();
+  const onMac = plat === "mac";
+  const onIos = plat === "ios";
 
   type Card = { id: string; title: string; body: string[]; from: string };
   const C = {
@@ -26,9 +29,9 @@
       built: "built",
       nav: ["Credits", "How the content is made", "Data sources", "Licence"],
       dl: {
-        nav: "Download",
-        title: "Download the Windows and macOS apps (work offline)",
-        lead: "Install the dictionary on your computer to look words up without an Internet connection. The app has every feature of the web version and uses the same open data, but nothing has to be downloaded into the browser first, and it has no Google Analytics.",
+        nav: "Apps",
+        title: "Apps for Windows, macOS, iPhone and iPad (work offline)",
+        lead: "Install the dictionary on your computer, iPhone or iPad to look words up without an Internet connection. The apps have every feature of the web version and use the same open data, but nothing has to be downloaded into the browser first, and they have no Google Analytics.",
         winBtn: "Download for Windows",
         winMeta: "Windows 10/11, 64-bit · about {size} · installs for your user account, no administrator rights needed",
         winFile: "On the download page, choose the file ending in _x64-setup.exe.",
@@ -40,7 +43,10 @@
         macSteps: "Open the .dmg → drag EC Advanced Learners’ Dictionary into Applications. Read-aloud uses the voices installed on your Mac. Uninstall: drag the app to the Trash.",
         macNote: "The app is not signed with an Apple Developer ID yet, so macOS blocks it the first time. Click **Done**, open **System Settings › Privacy & Security**, scroll down and click **Open Anyway**. You only need to do this once.",
         macDamaged: "If macOS says the app \"is damaged and can't be opened\", run this in Terminal, then open the app again:",
-        notes: "Release notes, SHA-256 checksums and earlier versions",
+        notes: "Windows and macOS: release notes, SHA-256 checksums and earlier versions",
+        iosBtn: "iPhone and iPad – App Store",
+        iosMeta: "iOS and iPadOS 15 or later · free, no ads, no account",
+        iosSteps: "Install it from the App Store. The dictionary data comes with the app, so it works without an Internet connection. History and word lists stay on your device; make a backup file in Settings.",
       },
       creditsTitle: "Credits",
       createdBy: "Created by",
@@ -270,9 +276,9 @@
       built: "dựng ngày",
       nav: ["Ghi công", "Cơ sở nội dung", "Nguồn dữ liệu", "Giấy phép"],
       dl: {
-        nav: "Tải bản cài",
-        title: "Tải bản cài cho Windows và macOS (dùng không cần mạng)",
-        lead: "Cài từ điển lên máy tính để tra từ cả khi không có Internet. Bản cài có đủ chức năng của bản web và dùng cùng nguồn dữ liệu mở, nhưng không phải tải dữ liệu vào trình duyệt trước và không dùng Google Analytics.",
+        nav: "Tải app",
+        title: "App cho Windows, macOS, iPhone và iPad (dùng không cần mạng)",
+        lead: "Cài từ điển lên máy tính, iPhone hoặc iPad để tra từ cả khi không có Internet. Các app có đủ chức năng của bản web và dùng cùng nguồn dữ liệu mở, nhưng không phải tải dữ liệu vào trình duyệt trước và không dùng Google Analytics.",
         winBtn: "Tải cho Windows",
         winMeta: "Windows 10/11, 64-bit · khoảng {size} · cài cho tài khoản đang dùng, không cần quyền quản trị",
         winFile: "Ở trang tải, chọn file có đuôi _x64-setup.exe.",
@@ -284,7 +290,10 @@
         macSteps: "Mở file .dmg → kéo EC Advanced Learners’ Dictionary vào thư mục Applications. Đọc to dùng giọng đọc có sẵn trên Mac. Gỡ: kéo app vào Thùng rác.",
         macNote: "App chưa được ký bằng Apple Developer ID, nên lần đầu macOS sẽ chặn. Bấm **Done**, vào **Cài đặt hệ thống › Quyền riêng tư & Bảo mật**, kéo xuống và bấm **Vẫn mở** (Open Anyway). Chỉ cần làm một lần.",
         macDamaged: "Nếu macOS báo app \"bị hỏng\" (is damaged), mở Terminal, chạy lệnh dưới rồi mở lại app:",
-        notes: "Ghi chú phát hành, mã SHA-256 và các bản trước",
+        notes: "Windows và macOS: ghi chú phát hành, mã SHA-256 và các bản trước",
+        iosBtn: "iPhone và iPad – App Store",
+        iosMeta: "iOS và iPadOS 15 trở lên · miễn phí, không quảng cáo, không cần tài khoản",
+        iosSteps: "Cài từ App Store. Dữ liệu từ điển có sẵn trong app nên tra được khi không có mạng. Lịch sử và danh sách từ nằm trên máy của bạn; tạo file sao lưu trong Cài đặt.",
       },
       creditsTitle: "Ghi công",
       createdBy: "Tác giả",
@@ -530,7 +539,7 @@
     openExternalUrl(url).catch(() => {});
   }
   const jump = (i: number) => sectionEls[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  // Thẻ tải bản cài (UC-W09, 2026-10-23): chỉ bản web trên máy tính; neo #/about/download.
+  // Thẻ tải app (UC-W09 2026-10-23, UC-I13 2026-11-25): chỉ bản web; neo #/about/download.
   const SHOW_DL = IS_WEB && !IS_NATIVE;
   const MAC_APP = "/Applications/EC Advanced Learners’ Dictionary.app";
   let dlEl: HTMLElement | undefined = $state();
@@ -552,7 +561,7 @@
   </header>
   {#if IS_WEB && !IS_NATIVE}
     <div class="hero-links">
-      {#if SHOW_DL}<button class="btn primary" onclick={jumpDl}><Icon name="download" size={16} /> {t("downloadDesktop")}</button>{/if}
+      {#if SHOW_DL}<button class="btn primary" onclick={jumpDl}><Icon name="download" size={16} /> {t("downloadApps")}</button>{/if}
       <a class="btn" href={SITE_HOME} target="_blank" rel="noopener"><Icon name="home" size={16} /> {t("goSite")}</a>
     </div>
   {/if}
@@ -564,13 +573,13 @@
   </nav>
 
   {#if SHOW_DL}
-    <!-- hai nút cùng trỏ Release mới nhất (tên file có số phiên bản nên không có link tải thẳng cố định); cột của máy đang dùng đứng trước -->
+    <!-- Windows/macOS cùng trỏ Release mới nhất; iPhone/iPad trỏ App Store (UC-I13). (tên file có số phiên bản nên không có link tải thẳng cố định); cột của máy đang dùng đứng trước -->
     <section class="card dl-card" id="download" bind:this={dlEl} aria-labelledby="dl-title">
       <h2 id="dl-title">{c.dl.title}</h2>
       <p>{c.dl.lead}</p>
       <div class="dl-grid">
-        <div class="os" class:first={!onMac}>
-          <a class="btn" class:primary={!onMac} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.winBtn}</a>
+        <div class="os" class:first={!onMac && !onIos}>
+          <a class="btn" class:primary={!onMac && !onIos} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.winBtn}</a>
           <p class="meta">{c.dl.winMeta.replace("{size}", SETUP_SIZE)}</p>
           <p class="small">{c.dl.winFile}</p>
           <p class="small">{c.dl.winSteps}</p>
@@ -584,6 +593,11 @@
           <p class="small note">{@html bold(c.dl.macNote)}</p>
           <p class="small">{c.dl.macDamaged}</p>
           <code class="cmd">xattr -dr com.apple.quarantine "{MAC_APP}"</code>
+        </div>
+        <div class="os" class:first={onIos}>
+          <a class="btn" class:primary={onIos} href={APP_STORE_URL} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.iosBtn}</a>
+          <p class="meta">{c.dl.iosMeta}</p>
+          <p class="small">{c.dl.iosSteps}</p>
         </div>
       </div>
       <p class="small"><a href={DESKTOP_RELEASES} target="_blank" rel="noopener">{c.dl.notes} ↗</a></p>
