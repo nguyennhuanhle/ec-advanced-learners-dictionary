@@ -815,7 +815,7 @@
       <span class="theme-label">{theme === "auto" ? t("themeAuto") : theme === "dark" ? t("themeDark") : t("themeLight")}</span>
     </button>
     {#if IS_WEB}
-      <!-- bản web (UC-W09, UC-I13): app dùng offline (Windows, macOS, iPhone/iPad), về trang Edtech Corner — mở tab mới -->
+      <!-- bản web (UC-W09, UC-I13, UC-A13): app dùng offline (Windows, macOS, iPhone/iPad, Android), về trang Edtech Corner — mở tab mới -->
       {#if !IS_NATIVE}
         <a class="icon-btn" href="#/about/download" onclick={openDownload} title={t("downloadApps")} aria-label={t("downloadApps")}>
           <Icon name="download" /><span class="wide-label">{t("offlineShort")}</span>

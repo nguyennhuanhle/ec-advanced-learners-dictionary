@@ -4,7 +4,7 @@
   import { APP_NAME, t, ui } from "./i18n.svelte";
   import type { DbStatus, Source } from "./types";
   import Badge from "./Badge.svelte";
-  import { APP_STORE_URL, DESKTOP_DOWNLOAD, DESKTOP_RELEASES, DMG_SIZE, IS_ANDROID, IS_IOS, IS_NATIVE, IS_WEB, SETUP_SIZE, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
+  import { APP_STORE_URL, PLAY_STORE_URL, DESKTOP_DOWNLOAD, DESKTOP_RELEASES, DMG_SIZE, IS_ANDROID, IS_IOS, IS_NATIVE, IS_WEB, SETUP_SIZE, SITE_HOME, devicePlatform, openExternalUrl } from "./platform";
   import Icon from "./Icon.svelte";
 
   let { sources, status, logo }: { sources: Source[]; status: DbStatus; logo: string } = $props();
@@ -13,10 +13,13 @@
   const AUTHOR_VI = "Lê Nguyễn Như Anh";
   const CONTACT = "https://edtechcorner.com/contact";
   const YEAR = "2026";
-  // cột của máy đang dùng đứng đầu và là nút chính (UC-W09, UC-I13): iPhone/iPad → App Store, Mac → .dmg, còn lại → Windows
+  // cột của máy đang dùng đứng đầu và là nút chính (UC-W09, UC-I13, UC-A13):
+  // Android → Google Play, iPhone/iPad → App Store, Mac → .dmg, còn lại → Windows
   const plat = devicePlatform();
   const onMac = plat === "mac";
   const onIos = plat === "ios";
+  const onAndroid = plat === "android";
+  const onWin = !onMac && !onIos && !onAndroid;
 
   type Card = { id: string; title: string; body: string[]; from: string };
   const C = {
@@ -30,8 +33,8 @@
       nav: ["Credits", "How the content is made", "Data sources", "Licence"],
       dl: {
         nav: "Apps",
-        title: "Apps for Windows, macOS, iPhone and iPad (work offline)",
-        lead: "Install the dictionary on your computer, iPhone or iPad to look words up without an Internet connection. The apps have every feature of the web version and use the same open data, but nothing has to be downloaded into the browser first, and they have no Google Analytics.",
+        title: "Apps for Windows, macOS, iPhone, iPad and Android (work offline)",
+        lead: "Install the dictionary on your computer, iPhone, iPad or Android device to look words up without an Internet connection. The apps have every feature of the web version and use the same open data, but nothing has to be downloaded into the browser first, and they have no Google Analytics.",
         winBtn: "Download for Windows",
         winMeta: "Windows 10/11, 64-bit · about {size} · installs for your user account, no administrator rights needed",
         winFile: "On the download page, choose the file ending in _x64-setup.exe.",
@@ -47,6 +50,9 @@
         iosBtn: "iPhone and iPad – App Store",
         iosMeta: "iOS and iPadOS 15 or later · free, no ads, no account",
         iosSteps: "Install it from the App Store. The dictionary data comes with the app, so it works without an Internet connection. History and word lists stay on your device; make a backup file in Settings.",
+        andBtn: "Android – Google Play",
+        andMeta: "Android 7.0 or later, phones and tablets · free, no ads, no account",
+        andSteps: "Install it from Google Play. The dictionary data comes with the app, so it works without an Internet connection. Read-aloud uses the text-to-speech voices on your phone. History and word lists stay on your device; make a backup file in Settings.",
       },
       creditsTitle: "Credits",
       createdBy: "Created by",
@@ -277,8 +283,8 @@
       nav: ["Ghi công", "Cơ sở nội dung", "Nguồn dữ liệu", "Giấy phép"],
       dl: {
         nav: "Tải app",
-        title: "App cho Windows, macOS, iPhone và iPad (dùng không cần mạng)",
-        lead: "Cài từ điển lên máy tính, iPhone hoặc iPad để tra từ cả khi không có Internet. Các app có đủ chức năng của bản web và dùng cùng nguồn dữ liệu mở, nhưng không phải tải dữ liệu vào trình duyệt trước và không dùng Google Analytics.",
+        title: "App cho Windows, macOS, iPhone, iPad và Android (dùng không cần mạng)",
+        lead: "Cài từ điển lên máy tính, iPhone, iPad hoặc máy Android để tra từ cả khi không có Internet. Các app có đủ chức năng của bản web và dùng cùng nguồn dữ liệu mở, nhưng không phải tải dữ liệu vào trình duyệt trước và không dùng Google Analytics.",
         winBtn: "Tải cho Windows",
         winMeta: "Windows 10/11, 64-bit · khoảng {size} · cài cho tài khoản đang dùng, không cần quyền quản trị",
         winFile: "Ở trang tải, chọn file có đuôi _x64-setup.exe.",
@@ -294,6 +300,9 @@
         iosBtn: "iPhone và iPad – App Store",
         iosMeta: "iOS và iPadOS 15 trở lên · miễn phí, không quảng cáo, không cần tài khoản",
         iosSteps: "Cài từ App Store. Dữ liệu từ điển có sẵn trong app nên tra được khi không có mạng. Lịch sử và danh sách từ nằm trên máy của bạn; tạo file sao lưu trong Cài đặt.",
+        andBtn: "Android – Google Play",
+        andMeta: "Android 7.0 trở lên, điện thoại và máy tính bảng · miễn phí, không quảng cáo, không cần tài khoản",
+        andSteps: "Cài từ Google Play. Dữ liệu từ điển có sẵn trong app nên tra được khi không có mạng. Đọc to dùng giọng đọc văn bản có sẵn trên điện thoại. Lịch sử và danh sách từ nằm trên máy của bạn; tạo file sao lưu trong Cài đặt.",
       },
       creditsTitle: "Ghi công",
       createdBy: "Tác giả",
@@ -539,7 +548,7 @@
     openExternalUrl(url).catch(() => {});
   }
   const jump = (i: number) => sectionEls[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  // Thẻ tải app (UC-W09 2026-10-23, UC-I13 2026-11-25): chỉ bản web; neo #/about/download.
+  // Thẻ tải app (UC-W09 2026-10-23, UC-I13 + UC-A13 2026-11-25): chỉ bản web; neo #/about/download.
   const SHOW_DL = IS_WEB && !IS_NATIVE;
   const MAC_APP = "/Applications/EC Advanced Learners’ Dictionary.app";
   let dlEl: HTMLElement | undefined = $state();
@@ -578,8 +587,8 @@
       <h2 id="dl-title">{c.dl.title}</h2>
       <p>{c.dl.lead}</p>
       <div class="dl-grid">
-        <div class="os" class:first={!onMac && !onIos}>
-          <a class="btn" class:primary={!onMac && !onIos} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.winBtn}</a>
+        <div class="os" class:first={onWin}>
+          <a class="btn" class:primary={onWin} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.winBtn}</a>
           <p class="meta">{c.dl.winMeta.replace("{size}", SETUP_SIZE)}</p>
           <p class="small">{c.dl.winFile}</p>
           <p class="small">{c.dl.winSteps}</p>
@@ -598,6 +607,11 @@
           <a class="btn" class:primary={onIos} href={APP_STORE_URL} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.iosBtn}</a>
           <p class="meta">{c.dl.iosMeta}</p>
           <p class="small">{c.dl.iosSteps}</p>
+        </div>
+        <div class="os" class:first={onAndroid}>
+          <a class="btn" class:primary={onAndroid} href={PLAY_STORE_URL} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.andBtn}</a>
+          <p class="meta">{c.dl.andMeta}</p>
+          <p class="small">{c.dl.andSteps}</p>
         </div>
       </div>
       <p class="small"><a href={DESKTOP_RELEASES} target="_blank" rel="noopener">{c.dl.notes} ↗</a></p>
