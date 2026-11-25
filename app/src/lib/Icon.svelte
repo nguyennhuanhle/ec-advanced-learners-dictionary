@@ -47,6 +47,10 @@
   {:else if name === "share"}
     <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
     <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+  {:else if name === "phone"}
+    <rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18h2" />
+  {:else if name === "laptop"}
+    <rect x="4" y="5" width="16" height="11" rx="1.5" /><path d="M2 19h20" />
   {:else if name === "x"}
     <path d="M18 6 6 18M6 6l12 12" />
   {/if}

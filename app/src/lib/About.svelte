@@ -13,13 +13,16 @@
   const AUTHOR_VI = "Lê Nguyễn Như Anh";
   const CONTACT = "https://edtechcorner.com/contact";
   const YEAR = "2026";
-  // cột của máy đang dùng đứng đầu và là nút chính (UC-W09, UC-I13, UC-A13):
-  // Android → Google Play, iPhone/iPad → App Store, Mac → .dmg, còn lại → Windows
+  // nhóm và ô của máy đang dùng đứng đầu, có nhãn "Máy của bạn" (UC-W16, thay cách trình bày của UC-W09/UC-I13/UC-A13):
+  // Android → Google Play, iPhone/iPad → App Store, Mac → .dmg, Windows → .exe
   const plat = devicePlatform();
   const onMac = plat === "mac";
   const onIos = plat === "ios";
   const onAndroid = plat === "android";
-  const onWin = !onMac && !onIos && !onAndroid;
+  const onWinOnly = plat === "windows"; // máy khác (Linux…) không gắn nhãn "Máy của bạn" (UC-W16)
+  const mobileFirst = onIos || onAndroid;
+  // QR để quét bằng điện thoại chỉ hiện trên máy tính (UC-W16); màn hẹp còn ẩn thêm bằng CSS
+  const SHOW_QR = !mobileFirst;
 
   type Card = { id: string; title: string; body: string[]; from: string };
   const C = {
@@ -34,25 +37,36 @@
       dl: {
         nav: "Apps",
         title: "Apps for Windows, macOS, iPhone, iPad and Android (work offline)",
-        lead: "Install the dictionary on your computer, iPhone, iPad or Android device to look words up without an Internet connection. The apps have every feature of the web version and use the same open data, but nothing has to be downloaded into the browser first, and they have no Google Analytics.",
+        lead: "Look words up without an Internet connection. The apps have every feature of this web version with the dictionary data built in, and they have no Google Analytics. Free, no ads, no account.",
+        mobile: "Phones and tablets",
+        desktop: "Computers",
+        yours: "Your device",
+        scan: "Scan with your phone",
+        ios: "iPhone and iPad",
+        iosMeta: "iOS and iPadOS 15 or later",
+        iosText: "History and word lists stay on your device; make a backup file in Settings.",
+        iosAlt: "Download on the App Store",
+        and: "Android",
+        andMeta: "Android 7.0 or later · phones and tablets",
+        andText: "Read-aloud uses the text-to-speech voices on your phone. History and word lists stay on your device; make a backup file in Settings.",
+        andAlt: "Get it on Google Play",
+        win: "Windows",
         winBtn: "Download for Windows",
-        winMeta: "Windows 10/11, 64-bit · about {size} · installs for your user account, no administrator rights needed",
-        winFile: "On the download page, choose the file ending in _x64-setup.exe.",
+        winMeta: "Windows 10/11, 64-bit · about {size}",
+        winFile: "On the download page, choose the file ending in _x64-setup.exe. Installs for your user account, no administrator rights needed.",
+        winHow: "How to install · if Windows blocks it",
         winSteps: "Run the file → Next → Install. The installer includes WebView2, so it also installs offline. Installing a new version over the old one keeps your history and word lists. Uninstall from Settings › Apps.",
         winNote: "The installer is not code-signed yet, so Windows may show \"Windows protected your PC\". Click **More info**, then **Run anyway**.",
+        mac: "macOS",
         macBtn: "Download for macOS",
-        macMeta: "macOS 10.13 or later, Apple silicon and Intel Macs · about {size}",
+        macMeta: "macOS 10.13 or later · Apple silicon and Intel · about {size}",
         macFile: "On the download page, choose the file ending in _universal.dmg.",
+        macHow: "How to install · if macOS blocks it",
         macSteps: "Open the .dmg → drag EC Advanced Learners’ Dictionary into Applications. Read-aloud uses the voices installed on your Mac. Uninstall: drag the app to the Trash.",
         macNote: "The app is not signed with an Apple Developer ID yet, so macOS blocks it the first time. Click **Done**, open **System Settings › Privacy & Security**, scroll down and click **Open Anyway**. You only need to do this once.",
         macDamaged: "If macOS says the app \"is damaged and can't be opened\", run this in Terminal, then open the app again:",
-        notes: "Windows and macOS: release notes, SHA-256 checksums and earlier versions",
-        iosBtn: "iPhone and iPad – App Store",
-        iosMeta: "iOS and iPadOS 15 or later · free, no ads, no account",
-        iosSteps: "Install it from the App Store. The dictionary data comes with the app, so it works without an Internet connection. History and word lists stay on your device; make a backup file in Settings.",
-        andBtn: "Android – Google Play",
-        andMeta: "Android 7.0 or later, phones and tablets · free, no ads, no account",
-        andSteps: "Install it from Google Play. The dictionary data comes with the app, so it works without an Internet connection. Read-aloud uses the text-to-speech voices on your phone. History and word lists stay on your device; make a backup file in Settings.",
+        notes: "Release notes, SHA-256 checksums and earlier versions",
+        tm: "Apple, the Apple logo, iPhone and iPad are trademarks of Apple Inc., registered in the U.S. and other countries. App Store is a service mark of Apple Inc. Google Play and the Google Play logo are trademarks of Google LLC.",
       },
       creditsTitle: "Credits",
       createdBy: "Created by",
@@ -284,25 +298,36 @@
       dl: {
         nav: "Tải app",
         title: "App cho Windows, macOS, iPhone, iPad và Android (dùng không cần mạng)",
-        lead: "Cài từ điển lên máy tính, iPhone, iPad hoặc máy Android để tra từ cả khi không có Internet. Các app có đủ chức năng của bản web và dùng cùng nguồn dữ liệu mở, nhưng không phải tải dữ liệu vào trình duyệt trước và không dùng Google Analytics.",
+        lead: "Tra từ cả khi không có Internet. Các app có đủ chức năng của bản web, dữ liệu từ điển có sẵn trong app và không dùng Google Analytics. Miễn phí, không quảng cáo, không cần tài khoản.",
+        mobile: "Điện thoại và máy tính bảng",
+        desktop: "Máy tính",
+        yours: "Máy của bạn",
+        scan: "Quét bằng điện thoại",
+        ios: "iPhone và iPad",
+        iosMeta: "iOS và iPadOS 15 trở lên",
+        iosText: "Lịch sử và danh sách từ nằm trên máy của bạn; tạo file sao lưu trong Cài đặt.",
+        iosAlt: "Tải về trên App Store",
+        and: "Android",
+        andMeta: "Android 7.0 trở lên · điện thoại và máy tính bảng",
+        andText: "Đọc to dùng giọng đọc văn bản có sẵn trên điện thoại. Lịch sử và danh sách từ nằm trên máy của bạn; tạo file sao lưu trong Cài đặt.",
+        andAlt: "Tải về trên Google Play",
+        win: "Windows",
         winBtn: "Tải cho Windows",
-        winMeta: "Windows 10/11, 64-bit · khoảng {size} · cài cho tài khoản đang dùng, không cần quyền quản trị",
-        winFile: "Ở trang tải, chọn file có đuôi _x64-setup.exe.",
+        winMeta: "Windows 10/11, 64-bit · khoảng {size}",
+        winFile: "Ở trang tải, chọn file có đuôi _x64-setup.exe. Cài cho tài khoản đang dùng, không cần quyền quản trị.",
+        winHow: "Cách cài · khi Windows chặn",
         winSteps: "Chạy file → Next → Install. Bộ cài có sẵn WebView2 nên cài được cả khi không có mạng. Cài bản mới đè lên bản cũ vẫn giữ lịch sử và danh sách từ. Gỡ trong Settings › Apps.",
         winNote: "Bộ cài chưa có chữ ký số, nên Windows có thể hiện \"Windows protected your PC\". Bấm **More info** rồi **Run anyway** để cài.",
+        mac: "macOS",
         macBtn: "Tải cho macOS",
-        macMeta: "macOS 10.13 trở lên, Mac chip Apple và Intel · khoảng {size}",
+        macMeta: "macOS 10.13 trở lên · Mac chip Apple và Intel · khoảng {size}",
         macFile: "Ở trang tải, chọn file có đuôi _universal.dmg.",
+        macHow: "Cách cài · khi macOS chặn",
         macSteps: "Mở file .dmg → kéo EC Advanced Learners’ Dictionary vào thư mục Applications. Đọc to dùng giọng đọc có sẵn trên Mac. Gỡ: kéo app vào Thùng rác.",
         macNote: "App chưa được ký bằng Apple Developer ID, nên lần đầu macOS sẽ chặn. Bấm **Done**, vào **Cài đặt hệ thống › Quyền riêng tư & Bảo mật**, kéo xuống và bấm **Vẫn mở** (Open Anyway). Chỉ cần làm một lần.",
         macDamaged: "Nếu macOS báo app \"bị hỏng\" (is damaged), mở Terminal, chạy lệnh dưới rồi mở lại app:",
-        notes: "Windows và macOS: ghi chú phát hành, mã SHA-256 và các bản trước",
-        iosBtn: "iPhone và iPad – App Store",
-        iosMeta: "iOS và iPadOS 15 trở lên · miễn phí, không quảng cáo, không cần tài khoản",
-        iosSteps: "Cài từ App Store. Dữ liệu từ điển có sẵn trong app nên tra được khi không có mạng. Lịch sử và danh sách từ nằm trên máy của bạn; tạo file sao lưu trong Cài đặt.",
-        andBtn: "Android – Google Play",
-        andMeta: "Android 7.0 trở lên, điện thoại và máy tính bảng · miễn phí, không quảng cáo, không cần tài khoản",
-        andSteps: "Cài từ Google Play. Dữ liệu từ điển có sẵn trong app nên tra được khi không có mạng. Đọc to dùng giọng đọc văn bản có sẵn trên điện thoại. Lịch sử và danh sách từ nằm trên máy của bạn; tạo file sao lưu trong Cài đặt.",
+        notes: "Ghi chú phát hành, mã SHA-256 và các bản trước",
+        tm: "Apple, logo Apple, iPhone và iPad là nhãn hiệu của Apple Inc., đã đăng ký tại Hoa Kỳ và các nước khác. App Store là nhãn hiệu dịch vụ của Apple Inc. Google Play và logo Google Play là nhãn hiệu của Google LLC.",
       },
       creditsTitle: "Ghi công",
       createdBy: "Tác giả",
@@ -582,39 +607,71 @@
   </nav>
 
   {#if SHOW_DL}
-    <!-- Windows/macOS cùng trỏ Release mới nhất; iPhone/iPad trỏ App Store (UC-I13). (tên file có số phiên bản nên không có link tải thẳng cố định); cột của máy đang dùng đứng trước -->
+    <!-- Thẻ tải (UC-W16): hai nhóm, mỗi app một ô cùng khuôn; nhóm và ô của máy đang dùng đứng đầu. Windows/macOS cùng trỏ
+         Release mới nhất (tên file có số phiên bản nên không có link tải thẳng cố định); App Store/Google Play dùng huy hiệu chính thức. -->
     <section class="card dl-card" id="download" bind:this={dlEl} aria-labelledby="dl-title">
       <h2 id="dl-title">{c.dl.title}</h2>
-      <p>{c.dl.lead}</p>
-      <div class="dl-grid">
-        <div class="os" class:first={onWin}>
-          <a class="btn" class:primary={onWin} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.winBtn}</a>
-          <p class="meta">{c.dl.winMeta.replace("{size}", SETUP_SIZE)}</p>
-          <p class="small">{c.dl.winFile}</p>
-          <p class="small">{c.dl.winSteps}</p>
-          <p class="small note">{@html bold(c.dl.winNote)}</p>
+      <p class="dl-lead">{c.dl.lead}</p>
+      <div class="dl-groups">
+        <div class="dl-group">
+          <h3 class="group-title"><Icon name="phone" size={16} /> {c.dl.mobile}</h3>
+          <div class="apps">
+            <article class="app store" class:mine={onIos}>
+              <div class="app-body">
+                <div class="app-head"><h4>{c.dl.ios}</h4>{#if onIos}<span class="mine-tag">{c.dl.yours}</span>{/if}</div>
+                <p class="meta">{c.dl.iosMeta}</p>
+                <a class="badge" href={APP_STORE_URL} target="_blank" rel="noopener"><img src="/badges/app-store.webp" alt={c.dl.iosAlt} width="132" height="44" /></a>
+                <p class="small">{c.dl.iosText}</p>
+              </div>
+              {#if SHOW_QR}<figure class="qr"><img src="/badges/qr-app-store.svg" alt="" width="88" height="88" /><figcaption>{c.dl.scan}</figcaption></figure>{/if}
+            </article>
+            <article class="app store" class:mine={onAndroid} class:first={onAndroid}>
+              <div class="app-body">
+                <div class="app-head"><h4>{c.dl.and}</h4>{#if onAndroid}<span class="mine-tag">{c.dl.yours}</span>{/if}</div>
+                <p class="meta">{c.dl.andMeta}</p>
+                <a class="badge" href={PLAY_STORE_URL} target="_blank" rel="noopener"><img src="/badges/google-play.webp" alt={c.dl.andAlt} width="148" height="44" /></a>
+                <p class="small">{c.dl.andText}</p>
+              </div>
+              {#if SHOW_QR}<figure class="qr"><img src="/badges/qr-google-play.svg" alt="" width="88" height="88" /><figcaption>{c.dl.scan}</figcaption></figure>{/if}
+            </article>
+          </div>
         </div>
-        <div class="os" class:first={onMac}>
-          <a class="btn" class:primary={onMac} href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.macBtn}</a>
-          <p class="meta">{c.dl.macMeta.replace("{size}", DMG_SIZE)}</p>
-          <p class="small">{c.dl.macFile}</p>
-          <p class="small">{c.dl.macSteps}</p>
-          <p class="small note">{@html bold(c.dl.macNote)}</p>
-          <p class="small">{c.dl.macDamaged}</p>
-          <code class="cmd">xattr -dr com.apple.quarantine "{MAC_APP}"</code>
-        </div>
-        <div class="os" class:first={onIos}>
-          <a class="btn" class:primary={onIos} href={APP_STORE_URL} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.iosBtn}</a>
-          <p class="meta">{c.dl.iosMeta}</p>
-          <p class="small">{c.dl.iosSteps}</p>
-        </div>
-        <div class="os" class:first={onAndroid}>
-          <a class="btn" class:primary={onAndroid} href={PLAY_STORE_URL} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.andBtn}</a>
-          <p class="meta">{c.dl.andMeta}</p>
-          <p class="small">{c.dl.andSteps}</p>
+        <div class="dl-group" class:first={!mobileFirst}>
+          <h3 class="group-title"><Icon name="laptop" size={16} /> {c.dl.desktop}</h3>
+          <div class="apps">
+            <article class="app" class:mine={onWinOnly}>
+              <div class="app-body">
+                <div class="app-head"><h4>{c.dl.win}</h4>{#if onWinOnly}<span class="mine-tag">{c.dl.yours}</span>{/if}</div>
+                <p class="meta">{c.dl.winMeta.replace("{size}", SETUP_SIZE)}</p>
+                <a class="btn primary get" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.winBtn}</a>
+                <p class="small">{c.dl.winFile}</p>
+                <details class="how">
+                  <summary>{c.dl.winHow}</summary>
+                  <p class="small">{c.dl.winSteps}</p>
+                  <p class="small note">{@html bold(c.dl.winNote)}</p>
+                </details>
+              </div>
+            </article>
+            <article class="app" class:mine={onMac} class:first={onMac}>
+              <div class="app-body">
+                <div class="app-head"><h4>{c.dl.mac}</h4>{#if onMac}<span class="mine-tag">{c.dl.yours}</span>{/if}</div>
+                <p class="meta">{c.dl.macMeta.replace("{size}", DMG_SIZE)}</p>
+                <a class="btn primary get" href={DESKTOP_DOWNLOAD} target="_blank" rel="noopener"><Icon name="download" size={16} /> {c.dl.macBtn}</a>
+                <p class="small">{c.dl.macFile}</p>
+                <details class="how">
+                  <summary>{c.dl.macHow}</summary>
+                  <p class="small">{c.dl.macSteps}</p>
+                  <p class="small note">{@html bold(c.dl.macNote)}</p>
+                  <p class="small">{c.dl.macDamaged}</p>
+                  <code class="cmd">xattr -dr com.apple.quarantine "{MAC_APP}"</code>
+                </details>
+              </div>
+            </article>
+          </div>
+          <p class="small rel"><a href={DESKTOP_RELEASES} target="_blank" rel="noopener">{c.dl.notes} ↗</a></p>
         </div>
       </div>
-      <p class="small"><a href={DESKTOP_RELEASES} target="_blank" rel="noopener">{c.dl.notes} ↗</a></p>
+      <p class="tm">{c.dl.tm}</p>
     </section>
   {/if}
 
@@ -759,7 +816,7 @@
   .btn.primary {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--surface); /* trắng ở giao diện sáng; nền tối ở giao diện tối (nút xanh nhạt, chữ trắng khó đọc) */
   }
   .hero-links button.btn {
     font: inherit;
@@ -767,43 +824,187 @@
     font-size: 0.92rem;
     cursor: pointer;
   }
+  /* Thẻ tải (UC-W16) */
   .dl-card {
     margin: 14px 0 4px;
+    padding: 20px 22px 16px;
     scroll-margin-top: 12px;
+    background: linear-gradient(160deg, var(--accent-soft), var(--surface) 55%);
   }
   .dl-card h2 {
-    margin: 0 0 8px;
-    font-size: 1.1rem;
+    margin: 0 0 6px;
+    padding: 0;
+    border: 0;
+    font-size: 1.25rem;
   }
-  .dl-grid {
+  .dl-card .dl-lead {
+    margin: 0;
+    max-width: 68ch;
+    color: var(--ink-2);
+  }
+  .dl-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    margin: 18px 0 12px;
+  }
+  .dl-group.first {
+    order: -1;
+  }
+  .group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .apps {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
-    margin: 12px 0 10px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
   }
-  .os {
+  .app {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .app.first {
+    order: -1;
+  }
+  .app.mine {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), var(--shadow);
+  }
+  .app-body {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    min-width: 0;
   }
-  .os.first {
-    order: -1;
+  .app-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
-  .os .btn {
-    margin-bottom: 8px;
+  .app h4 {
+    margin: 0;
+    font-size: 1.08rem;
+  }
+  .mine-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 2px 9px;
+    white-space: nowrap;
   }
   .dl-card .meta {
+    margin: 2px 0 12px;
     color: var(--ink-3);
     font-size: 0.85rem;
   }
   .dl-card .small {
-    font-size: 0.88rem;
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+  .app .small {
+    margin: 10px 0 0;
+  }
+  .badge {
+    display: inline-block;
+    border-radius: 9px;
+  }
+  .badge img {
+    display: block;
+    height: 44px;
+    width: auto;
+  }
+  .badge:hover img {
+    filter: brightness(1.15);
+  }
+  .btn.get {
+    padding: 0 18px;
+    min-height: 44px;
+    border-radius: 9px;
+  }
+  .qr {
+    margin: 0;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 104px;
+    color: var(--ink-3);
+    font-size: 0.72rem;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .qr img {
+    box-sizing: content-box;
+    display: block;
+    background: #fff;
+    padding: 7px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .how {
+    margin-top: 10px;
+    width: 100%;
+    font-size: 0.86rem;
+  }
+  .how summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-weight: 600;
+    width: fit-content;
+  }
+  .how[open] summary {
+    margin-bottom: 4px;
   }
   .dl-card .note {
     background: var(--accent-soft);
     border-radius: 8px;
     padding: 8px 10px;
+  }
+  .dl-card .rel {
+    margin: 10px 0 0;
+  }
+  .dl-card .tm {
+    margin: 14px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: var(--ink-3);
+  }
+  @media (max-width: 560px) {
+    .dl-card {
+      padding: 16px 14px 12px;
+    }
+    .apps {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .app {
+      padding: 14px;
+    }
+    .qr {
+      display: none;
+    }
   }
   .dl-card .cmd {
     display: block;
